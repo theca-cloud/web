@@ -10,7 +10,7 @@ cd "$(dirname "$0")/.."
 
 gitea=https://git.pband.ch
 repo=theca/web
-version=$(sed -n 's/^  "version": "\(.*\)",$/\1/p' package.json | head -1)
+version=$(jq -r .version package.json)
 branch=${CI_COMMIT_BRANCH:-$(git branch --show-current)}
 
 case "${1:-}" in

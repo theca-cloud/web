@@ -11,3 +11,7 @@ data/
 test-results/
 playwright-report/
 .secrets/
+# Generated
+src/lib/paraglide/
+project.inlang/cache/
+vite.config.ts.timestamp-*

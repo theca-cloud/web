@@ -31,8 +31,8 @@ if [ "$step" = all ] || [ "$step" = lint ]; then
     npm run lint
     npm run check
     scripts/api-types.sh
-    git diff --exit-code -- src/lib/api.d.ts ||
-        { echo "src/lib/api.d.ts is stale: run scripts/api-types.sh and commit it" >&2; exit 1; }
+    git diff --exit-code -- src/lib/openapi.d.ts ||
+        { echo "src/lib/openapi.d.ts is stale: run scripts/api-types.sh and commit it" >&2; exit 1; }
 fi
 if [ "$step" = all ] || [ "$step" = build ]; then
     npm run build

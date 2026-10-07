@@ -87,7 +87,7 @@ steps:
   # Playwright's image, with its browsers: its tag is the @playwright/test
   # version in package.json.
   - name: test
-    image: mcr.microsoft.com/playwright:v1.55.0-noble
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
     depends_on: [lint, build, theca]
     environment:
       THECA_TEST_SERVER: http://theca:8080

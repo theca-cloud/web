@@ -1,0 +1,11 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"app_name": "Theca",
+	"skeleton_engine": "Engine",
+	"skeleton_service_worker": "Service Worker",
+	"status_starting": "starting",
+	"status_ready": "ready",
+	"status_failed": "failed: {error}",
+	"status_unavailable": "unavailable",
+	"error_unexpected": "Something went wrong."
+}
