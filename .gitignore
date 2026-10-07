@@ -6,4 +6,7 @@ build/
 .svelte-kit/
 dist/
 .env
-.npmrc
+data/
+.tags
+test-results/
+playwright-report/

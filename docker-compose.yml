@@ -1,0 +1,48 @@
+name: theca-web-dev
+
+# The server the web app is developed and tested against: core's latest release
+# candidate, with Postgres. Run scripts/dev.sh rather than `docker compose up`
+# directly: it writes the secrets this file mounts and sets the instance up.
+services:
+  postgres:
+    image: postgres:18
+    # As you (dev.sh sets it): data/ stays yours to read and delete.
+    user: ${HOST_USER}
+    environment:
+      POSTGRES_USER: theca
+      POSTGRES_PASSWORD: theca
+      POSTGRES_DB: theca
+      # The server refuses other collations.
+      POSTGRES_INITDB_ARGS: --locale-provider=builtin --builtin-locale=C.UTF-8
+    volumes:
+      - ./data/db:/var/lib/postgresql
+    healthcheck:
+      test: pg_isready -U theca -d theca
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  theca:
+    image: git.pband.ch/theca/core:0-rc
+    user: ${HOST_USER}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL__FILE: /run/secrets/database_url
+      SERVER_KEY__FILE: /run/secrets/server.key
+      DATA_KEY__FILE: /run/secrets/data.key
+      # The app's dev server (Vite, :5173), which proxies /api and /dav here:
+      # links and presigned URLs lead to the app, same origin, no CORS.
+      PUBLIC_URL: http://localhost:5173
+      SETUP_OPEN: "true"
+    volumes:
+      - ./data/secrets:/run/secrets
+      - ./data/files:/files
+    ports:
+      - 127.0.0.1:8093:8080
+    healthcheck:
+      test: ["CMD", "/theca-server", "healthcheck"]
+      interval: 2s
+      timeout: 2s
+      retries: 30

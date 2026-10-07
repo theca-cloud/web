@@ -6,6 +6,20 @@ Contributing: see [CONTRIBUTING.md](https://git.pband.ch/theca/docs/src/branch/p
 
 ## Development
 
-Prerequisites: Node.js, and a Gitea token with package read for `@theca/client` (private registry). A server to develop against: `../core/try/run.sh`.
+Prerequisites: Node.js 24, `git-cliff` for releases, and a Gitea token with package read (`@theca/client` and the core releases' `openapi.json` are private), read by `.npmrc` and the scripts:
+
+```sh
+export GITEA_TOKEN=<token>
+```
+
+```sh
+scripts/dev.sh                 # start the dev server (core's latest rc + Postgres, set up), on :8093
+scripts/dev.sh --down          # stop it (start over: then rm -rf data/)
+npm run dev                    # the app on :5173, /api and /dav proxied to :8093; login dev@theca.test theca-dev-password
+scripts/ci.sh [lint|build|test] # every CI check natively, or one step (test needs scripts/dev.sh)
+scripts/install-hooks.sh       # run scripts/ci.sh before every push (bypass: git push --no-verify)
+scripts/api-types.sh           # the API types from the pinned core release (after bumping @theca/client)
+scripts/release.sh --dry-run   # the next version and its changelog (releases: see CONTRIBUTING.md)
+```
 
 License: AGPL-3.0.
