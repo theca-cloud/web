@@ -857,6 +857,48 @@ export interface paths {
         patch: operations["update_library"];
         trace?: never;
     };
+    "/api/v1/libraries/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A library's members (its members, and the organization's owner). */
+        get: operations["members"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/libraries/{id}/members/{user}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Give a member of the organization access to the library, or change its
+         *     role (the owner). Invited members not joined yet can be added: their
+         *     access is ready when they accept.
+         */
+        put: operations["set_member"];
+        post?: never;
+        /**
+         * Take a member's access to the library away (the owner). A library may be
+         *     left without members: nobody reaches it until it's given some.
+         */
+        delete: operations["remove_member"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/libraries/{id}/restore": {
         parameters: {
             query?: never;
@@ -952,6 +994,53 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/namespaces/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a namespace (the owner): its libraries stop deduplicating with each
+         *     other at once, and keep every chunk they already share.
+         */
+        delete: operations["delete_namespace"];
+        options?: never;
+        head?: never;
+        /** Rename a namespace (the owner). */
+        patch: operations["rename_namespace"];
+        trace?: never;
+    };
+    "/api/v1/namespaces/{id}/libraries/{library}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put one of the organization's libraries in the namespace (the owner):
+         *     from now on, it dedups with the namespace's other libraries, both ways.
+         *     Every member of each can then probe the others' content: a security
+         *     decision (decisions.md, Trust boundary).
+         */
+        put: operations["add_library"];
+        post?: never;
+        /**
+         * Take a library out of the namespace (the owner): the trust is revoked at
+         *     once; the library keeps the chunks it already shares.
+         */
+        delete: operations["remove_library"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1083,7 +1172,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/organizations/{id}": {
+    "/api/v1/organizations": {
         parameters: {
             query?: never;
             header?: never;
@@ -1091,6 +1180,27 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
+        /**
+         * Create a company organization, owned by the account (from a full session;
+         *     instance admins only when `organization_creation` is `admins`).
+         */
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An organization, with its quota and usage (any member). */
+        get: operations["organization"];
         put?: never;
         post?: never;
         /**
@@ -1100,7 +1210,8 @@ export interface paths {
         delete: operations["delete_organization"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Rename a company organization (the owner). */
+        patch: operations["rename"];
         trace?: never;
     };
     "/api/v1/organizations/{id}/identity-providers": {
@@ -1146,6 +1257,26 @@ export interface paths {
         patch: operations["update_provider"];
         trace?: never;
     };
+    "/api/v1/organizations/{id}/libraries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every library of the organization, whether the owner is a member or not
+         *     (the owner).
+         */
+        get: operations["libraries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations/{id}/members": {
         parameters: {
             query?: never;
@@ -1179,6 +1310,24 @@ export interface paths {
         post?: never;
         /** Remove a member, or cancel an invitation (the owner; never the owner). */
         delete: operations["remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organizations/{id}/namespaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The organization's dedup namespaces and their libraries (the owner). */
+        get: operations["namespaces"];
+        put?: never;
+        /** Create a dedup namespace, empty (the owner). */
+        post: operations["create_namespace"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1342,6 +1491,16 @@ export interface components {
              * @description Bytes it stores (the quota's measure).
              */
             used: number;
+        };
+        /** @description A folder above a node. */
+        Ancestor: {
+            /**
+             * Format: uuid
+             * @description The folder.
+             */
+            id: string;
+            /** @description Its name (empty for the library's root). */
+            name: string;
         };
         /** @description An API error: a stable machine-readable `code` and a human message. */
         ApiError: {
@@ -1799,6 +1958,25 @@ export interface components {
              * @description Its root folder.
              */
             root: string;
+            /**
+             * @description Whether the account may write in it: its role, within its credential's
+             *     scope and read-only cap.
+             */
+            writable?: boolean;
+        };
+        /** @description A library's member. */
+        LibraryMember: {
+            /** @description Its email. */
+            email: string;
+            /** @description False while it's an invitation not accepted yet. */
+            joined: boolean;
+            /** @description Its role. */
+            role: components["schemas"]["Role"];
+            /**
+             * Format: uuid
+             * @description The organization's member (as `GET /organizations/{id}/members` lists them).
+             */
+            user: string;
         };
         /** @description `GET /limits`: the instance's limits clients size their work by. */
         Limits: {
@@ -1867,6 +2045,8 @@ export interface components {
             account: string;
             /** @description Its email. */
             email: string;
+            /** @description An instance admin (organizations, storages, settings). */
+            instance_admin?: boolean;
             /** @description Its memberships. */
             organizations: components["schemas"]["Membership"][];
             /** @description Whether logging in with the password also asks for a TOTP code. */
@@ -1897,10 +2077,29 @@ export interface components {
              * @description The organization.
              */
             organization: string;
+            /** @description The account owns it (its administrator: members, settings). */
+            owner?: boolean;
             /** @description The account's personal organization (shown as "My files"). */
             personal: boolean;
             /** @description Suspended by the instance admin: nothing in it is reachable. */
             suspended: boolean;
+        };
+        /** @description A dedup namespace: its libraries' members trust each other. */
+        Namespace: {
+            /**
+             * Format: uuid
+             * @description The namespace.
+             */
+            id: string;
+            /** @description The libraries in it. */
+            libraries: string[];
+            /** @description Its name. */
+            name: string;
+        };
+        /** @description `POST /organizations/{id}/namespaces`, `PATCH /namespaces/{id}`. */
+        NamespaceName: {
+            /** @description Its name. */
+            name: string;
         };
         /** @description A new app password: the secret is shown only this once. */
         NewAppPassword: {
@@ -1945,6 +2144,11 @@ export interface components {
         /** @description A file or folder, with where it is. */
         NodeInfo: {
             /**
+             * @description The folders above it, from the library's root (named `""`) to its
+             *     folder; none for the root.
+             */
+            ancestors?: components["schemas"]["Ancestor"][];
+            /**
              * Format: uuid
              * @description A file's current version.
              */
@@ -1981,6 +2185,50 @@ export interface components {
         OidcRedirect: {
             /** @description The provider's authorization URL. */
             url: string;
+        };
+        /** @description An organization, to one of its members. */
+        Organization: {
+            /**
+             * Format: uuid
+             * @description The organization.
+             */
+            id: string;
+            /** @description Its name. */
+            name: string;
+            /** @description The account owns it. */
+            owner: boolean;
+            /** @description The account's personal organization (shown as "My files"). */
+            personal: boolean;
+            /**
+             * Format: int64
+             * @description Its quota in bytes; none: unlimited.
+             */
+            quota?: number | null;
+            /**
+             * Format: int64
+             * @description What it stores, in bytes (counted against the quota).
+             */
+            used: number;
+        };
+        /** @description One of an organization's libraries, to its owner. */
+        OrganizationLibrary: {
+            /**
+             * Format: uuid
+             * @description The library.
+             */
+            id: string;
+            /**
+             * Format: int64
+             * @description How many members it has (none: nobody reaches it until given some).
+             */
+            members: number;
+            /** @description Its name. */
+            name: string;
+        };
+        /** @description `POST /organizations`, `PATCH /organizations/{id}`. */
+        OrganizationName: {
+            /** @description Its name. */
+            name: string;
         };
         /** @description An OIDC identity provider (never its secret). */
         ProviderInfo: {
@@ -2050,6 +2298,11 @@ export interface components {
             /** @description Its path. */
             path: string;
         };
+        /**
+         * @description A member's role in a library.
+         * @enum {string}
+         */
+        Role: "read" | "write" | "unknown";
         /** @description A search result. */
         SearchResult: {
             /**
@@ -2115,6 +2368,11 @@ export interface components {
             password?: string | null;
             /** @description The token. */
             token: string;
+        };
+        /** @description `PUT /libraries/{id}/members/{user}`: adds the member, or changes its role. */
+        SetRole: {
+            /** @description The role. */
+            role: components["schemas"]["Role"];
         };
         /** @description An instance setting (admin). */
         SettingInfo: {
@@ -4010,6 +4268,15 @@ export interface operations {
                     "application/json": components["schemas"]["Library"];
                 };
             };
+            /** @description `owner_required`: namespaces are the owner's */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description Unknown namespace */
             404: {
                 headers: {
@@ -4092,6 +4359,107 @@ export interface operations {
             };
             /** @description `library_name_taken` */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    members: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMember"][];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    set_member: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                user: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetRole"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMember"][];
+                };
+            };
+            /** @description `invalid_role` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description No such library, or no such member of its organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    remove_member: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                user: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4251,6 +4619,135 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Export"];
+                };
+            };
+        };
+    };
+    delete_namespace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    rename_namespace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NamespaceName"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Namespace"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description `namespace_name_taken` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    add_library: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                library: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Namespace"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    remove_library: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                library: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Namespace"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -4563,6 +5060,76 @@ export interface operations {
             };
         };
     };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationName"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organization"];
+                };
+            };
+            /** @description `invalid_name` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description `organization_creation_closed` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    organization: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organization"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     delete_organization: {
         parameters: {
             query?: never;
@@ -4589,6 +5156,57 @@ export interface operations {
                 };
             };
             /** @description `personal_organization` (deleted with the account) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    rename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationName"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organization"];
+                };
+            };
+            /** @description `invalid_name` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description `personal_organization` */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -4724,6 +5342,35 @@ export interface operations {
             };
         };
     };
+    libraries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationLibrary"][];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     members: {
         parameters: {
             query?: never;
@@ -4831,6 +5478,86 @@ export interface operations {
                 };
             };
             /** @description `owner` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    namespaces: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Namespace"][];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    create_namespace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NamespaceName"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Namespace"];
+                };
+            };
+            /** @description `invalid_name` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description `namespace_name_taken` */
             409: {
                 headers: {
                     [name: string]: unknown;

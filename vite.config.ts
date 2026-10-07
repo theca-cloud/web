@@ -29,6 +29,9 @@ export default defineConfig({
 		})
 	],
 	server: {
+		// Its port is PUBLIC_URL's (scripts/dev.sh): taken, it fails rather than moves.
+		port: 5173,
+		strictPort: true,
 		proxy: { '/api': server, '/dav': server }
 	},
 	// The engine's worker imports @theca/client as an ES module.

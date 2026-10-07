@@ -51,7 +51,7 @@
 	},
 	"license": "AGPL-3.0-only",
 	"dependencies": {
-		"@theca/client": "0.8.0",
+		"@theca/client": "0.9.0",
 		"openapi-fetch": "^0.17.0"
 	}
 }
