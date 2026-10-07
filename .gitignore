@@ -10,3 +10,4 @@ data/
 .tags
 test-results/
 playwright-report/
+.secrets/

@@ -5,6 +5,8 @@
 # Run it after bumping @theca/client (read ../docs/BREAKING.md first).
 set -eu
 cd "$(dirname "$0")/.."
+# The registry token: GITEA_TOKEN, else .secrets/gitea_token (ignored by git).
+export GITEA_TOKEN="${GITEA_TOKEN:-$(cat .secrets/gitea_token 2>/dev/null)}"
 
 version=$(node -p "require('./package.json').dependencies['@theca/client']")
 case "$version" in

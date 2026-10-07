@@ -6,10 +6,10 @@ Contributing: see [CONTRIBUTING.md](https://git.pband.ch/theca/docs/src/branch/p
 
 ## Development
 
-Prerequisites: Node.js 24, `git-cliff` for releases, and a Gitea token with package read (`@theca/client` and the core releases' `openapi.json` are private), read by `.npmrc` and the scripts:
+Prerequisites: Node.js 24, `git-cliff` for releases, and a Gitea token with package read (`@theca/client` and the core releases' `openapi.json` are private), read by `.npmrc` and the scripts: `GITEA_TOKEN` in the environment, or the file `.secrets/gitea_token` (ignored by git), which the scripts read. npm itself only reads the variable:
 
 ```sh
-export GITEA_TOKEN=<token>
+GITEA_TOKEN=$(cat .secrets/gitea_token) npm install
 ```
 
 ```sh

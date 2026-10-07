@@ -13,6 +13,8 @@
 # private registry: GITEA_TOKEN (see the README).
 set -eu
 cd "$(dirname "$0")/.."
+# The registry token: GITEA_TOKEN, else .secrets/gitea_token (ignored by git).
+export GITEA_TOKEN="${GITEA_TOKEN:-$(cat .secrets/gitea_token 2>/dev/null)}"
 
 step=${1:-all}
 case "$step" in
