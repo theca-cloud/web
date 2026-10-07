@@ -29,8 +29,9 @@ export default defineConfig({
 		})
 	],
 	server: {
-		// Its port is PUBLIC_URL's (scripts/dev.sh): taken, it fails rather than moves.
-		port: 5173,
+		// Its port is PUBLIC_URL's (scripts/dev.sh): taken, it fails rather than
+		// moves. Not Vite's default 5173, which other projects keep busy.
+		port: 5193,
 		strictPort: true,
 		proxy: { '/api': server, '/dav': server }
 	},

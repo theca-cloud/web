@@ -794,6 +794,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/instance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What a login page shows before anyone logs in: the instance's name, and
+         *     whether accounts can be created (registration open, and emails sendable).
+         */
+        get: operations["instance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/invitations/accept": {
         parameters: {
             query?: never;
@@ -1899,6 +1919,13 @@ export interface components {
             id: string;
             /** @description Its name, e.g. "Google". */
             name: string;
+        };
+        /** @description `GET /instance`: public, for a login page. */
+        Instance: {
+            /** @description Its name (the setting `instance_name`). */
+            name: string;
+            /** @description Accounts can be created (`registration = open`, and SMTP configured). */
+            registration: boolean;
         };
         /** @description One run of a background job. */
         JobRun: {
@@ -4191,6 +4218,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    instance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Instance"];
                 };
             };
         };

@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
-# Sets a fresh instance up with the dev admin (the tests log in as it), and
-# raises the login rate limits: the tests log in more often than people do.
+# Sets a fresh instance up with the dev admin (the tests log in as it), raises
+# the login rate limits (the tests log in more often than people do), and
+# sends emails to Mailpit (`mailpit:1025`, in the compose and in CI) at once.
 # Idempotent. Used by scripts/dev.sh and the CI.
 #   scripts/setup.sh <server url> <storage path, as the server sees it>
 set -eu
@@ -24,5 +25,8 @@ session=$(curl -fsS -D - -o /dev/null -H 'Content-Type: application/json' "$url/
     -d '{"email": "'"$email"'", "password": "'"$password"'"}' |
     sed -n 's/^[Ss]et-[Cc]ookie: theca_session=\([^;]*\).*/\1/p' | tr -d '\r')
 curl -fsS -o /dev/null -X PATCH -H "Authorization: Bearer $session" -H 'Content-Type: application/json' \
-    "$url/api/v1/admin/settings" -d '{"rate_limit_login_ip": "10000/60", "rate_limit_login_account": "10000/60"}'
+    "$url/api/v1/admin/settings" -d '{"rate_limit_login_ip": "10000/60", "rate_limit_login_account": "10000/60",
+        "rate_limit_email_address": "10000/60", "rate_limit_email_ip": "10000/60",
+        "smtp_host": "mailpit", "smtp_port": "1025", "smtp_tls": "none", "smtp_from": "Theca <theca@dev.theca.test>",
+        "job_email_send_interval_secs": "1"}'
 curl -fsS -o /dev/null -X POST -H "Authorization: Bearer $session" "$url/api/v1/auth/logout"

@@ -27,6 +27,9 @@ services:
       POSTGRES_DB: theca
       # The server refuses other collations.
       POSTGRES_INITDB_ARGS: --locale-provider=builtin --builtin-locale=C.UTF-8
+  # The server's emails, read by the tests from its API.
+  - name: mailpit
+    image: axllent/mailpit:v1.31.4
 
 variables:
   - &node
@@ -62,10 +65,13 @@ steps:
     image: node:24
     depends_on: []
     commands:
-      - mkdir -p data/secrets data/files
+      - mkdir -p data/secrets data/files data/files-fresh
       - printf postgres://theca:theca@postgres:5432/theca >data/secrets/database_url
+      - printf postgres://theca:theca@postgres:5432/theca_fresh >data/secrets/database_url_fresh
       - ": >data/secrets/server.key"
       - ": >data/secrets/data.key"
+      - ": >data/secrets/server_fresh.key"
+      - ": >data/secrets/data_fresh.key"
       - chmod -R a+rwX data
 
   # The server the tests run against: core's latest release candidate, in the
@@ -84,14 +90,42 @@ steps:
       WEB_DIR: /woodpecker/src/build
       SETUP_OPEN: "true"
 
+  # A second server, never set up, for the setup wizard's tests: its database,
+  # then the server (open setup: the tests can't read its logs).
+  - name: fresh-db
+    image: postgres:18
+    depends_on: []
+    environment:
+      PGPASSWORD: theca
+    commands:
+      - until pg_isready -h postgres -U theca; do sleep 1; done
+      - createdb -h postgres -U theca theca_fresh
+
+  - name: theca-fresh
+    image: git.pband.ch/theca/core:0-rc
+    pull: true
+    detach: true
+    depends_on: [server-files, fresh-db]
+    environment:
+      DATABASE_URL__FILE: /woodpecker/src/data/secrets/database_url_fresh
+      # Its own keys: both servers would generate them into the same empty files.
+      SERVER_KEY__FILE: /woodpecker/src/data/secrets/server_fresh.key
+      DATA_KEY__FILE: /woodpecker/src/data/secrets/data_fresh.key
+      PUBLIC_URL: http://theca-fresh:8080
+      SETUP_OPEN: "true"
+      WEB_DIR: /woodpecker/src/build
+
   # Playwright's image, with its browsers: its tag is the @playwright/test
   # version in package.json.
   - name: test
     image: mcr.microsoft.com/playwright:v1.63.0-noble
-    depends_on: [lint, build, theca]
+    depends_on: [lint, build, theca, theca-fresh]
     environment:
       THECA_TEST_SERVER: http://theca:8080
       THECA_TEST_APP: http://theca:8080
+      THECA_TEST_FRESH: http://theca-fresh:8080
+      THECA_TEST_FRESH_STORAGE: /woodpecker/src/data/files-fresh
+      THECA_TEST_MAILPIT: http://mailpit:8025
       THECA_TEST_STORAGE: /woodpecker/src/data/files
     commands:
       - scripts/ci.sh test

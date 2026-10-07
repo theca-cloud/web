@@ -3,8 +3,15 @@ import createClient from 'openapi-fetch';
 import type { components, paths } from './openapi';
 import { err, ok, type Result } from './result';
 
-/** Same origin: the session cookie goes with every request, JSON bodies (CSRF). */
-export const api = createClient<paths>({ baseUrl: globalThis.location?.origin });
+/**
+ * Same origin: the session cookie goes with every request. `X-Theca-CSRF`:
+ * a cookie-authenticated `POST` without a JSON body (logout) needs it, and
+ * a cross-site form can't send it (decisions.md, Authentication).
+ */
+export const api = createClient<paths>({
+	baseUrl: globalThis.location?.origin,
+	headers: { 'X-Theca-CSRF': '1' }
+});
 
 /**
  * A failed call: the API's error (its stable `code` decides what the app

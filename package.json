@@ -18,6 +18,7 @@
 		"@eslint/js": "^10.0.1",
 		"@fontsource-variable/geist": "^5.3.0",
 		"@inlang/paraglide-js": "^2.18.2",
+		"@internationalized/date": "^3.12.4",
 		"@lucide/svelte": "^1.52.0",
 		"@playwright/test": "1.63.0",
 		"@sveltejs/adapter-static": "^4.0.0",
@@ -26,6 +27,7 @@
 		"@tailwindcss/forms": "^0.5.11",
 		"@tailwindcss/vite": "^4.3.0",
 		"@types/node": "^24",
+		"bits-ui": "^2.19.5",
 		"cn": "^0.4.0",
 		"eslint": "^10.4.1",
 		"eslint-config-prettier": "^10.1.8",
@@ -51,7 +53,7 @@
 	},
 	"license": "AGPL-3.0-only",
 	"dependencies": {
-		"@theca/client": "0.9.0",
+		"@theca/client": "0.10.0",
 		"openapi-fetch": "^0.17.0"
 	}
 }
