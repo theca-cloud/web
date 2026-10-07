@@ -1,0 +1,9 @@
+._*
+.DS_Store
+claude*.sh
+node_modules/
+build/
+.svelte-kit/
+dist/
+.env
+.npmrc
