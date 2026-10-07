@@ -7,7 +7,7 @@ when:
     # Nothing built or tested changed: docs, the roadmap, local-only scripts,
     # repo housekeeping.
     path:
-      exclude: ["**/*.md", "roadmap/**", "scripts/dev.sh", "scripts/install-hooks.sh", "scripts/release.sh", "LICENSE", ".gitignore", ".githooks/**", "docker-compose.yml", "cliff.toml"]
+      exclude: ["**/*.md", "roadmap/**", "scripts/dev.sh", "scripts/install-hooks.sh", "scripts/release.sh", "LICENSE", ".githooks/**", "docker-compose.yml", "cliff.toml", ".mcp.json", ".nvmrc", "components.json"]
     # Not the release merge coming back into dev: prod just tested that very code.
     evaluate: 'not (CI_COMMIT_BRANCH == "dev" && CI_COMMIT_MESSAGE startsWith "Merge branch ''dev'' into prod")'
   - event: manual
