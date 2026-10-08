@@ -1,0 +1,95 @@
+name: theca-web-dev
+
+# The server the web app is developed and tested against: core's latest release
+# candidate, with Postgres. Run scripts/dev.sh rather than `docker compose up`
+# directly: it writes the secrets this file mounts and sets the instance up.
+services:
+  postgres:
+    image: postgres:18
+    # As you (dev.sh sets it): data/ stays yours to read and delete.
+    user: ${HOST_USER}
+    environment:
+      POSTGRES_USER: theca
+      POSTGRES_PASSWORD: theca
+      POSTGRES_DB: theca
+      # The server refuses other collations.
+      POSTGRES_INITDB_ARGS: --locale-provider=builtin --builtin-locale=C.UTF-8
+    volumes:
+      - ./data/db:/var/lib/postgresql
+    healthcheck:
+      test: pg_isready -U theca -d theca
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  theca:
+    image: git.pband.ch/theca/core:0-rc
+    user: ${HOST_USER}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL__FILE: /run/secrets/database_url
+      SERVER_KEY__FILE: /run/secrets/server.key
+      DATA_KEY__FILE: /run/secrets/data.key
+      # The app's dev server (Vite, :5193), which proxies /api and /dav here:
+      # links and presigned URLs lead to the app, same origin, no CORS.
+      PUBLIC_URL: http://localhost:5193
+      SETUP_OPEN: "true"
+    volumes:
+      - ./data/secrets:/run/secrets
+      - ./data/files:/files
+    ports:
+      - 127.0.0.1:8093:8080
+    healthcheck:
+      test: ["CMD", "/theca-server", "healthcheck"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  # The tests read the server's emails from its API (on 8095: 8025 is often
+  # another project's Mailpit). The server reaches it as mailpit:1025.
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    ports:
+      - 127.0.0.1:8095:8025
+
+  # Its database, for theca-fresh (created once; scripts/dev.sh --fresh resets it).
+  fresh-db:
+    image: postgres:18
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: theca
+    command: sh -c "psql -h postgres -U theca -d theca -tc \"SELECT 1 FROM pg_database WHERE datname = 'theca_fresh'\" | grep -q 1 || createdb -h postgres -U theca theca_fresh"
+
+  # A second server, never set up, serving the built app: the setup wizard's
+  # tests. Open setup (no token: tests can't read its logs).
+  theca-fresh:
+    image: git.pband.ch/theca/core:0-rc
+    user: ${HOST_USER}
+    depends_on:
+      fresh-db:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL__FILE: /run/secrets/database_url_fresh
+      SERVER_KEY__FILE: /run/secrets/server.key
+      DATA_KEY__FILE: /run/secrets/data.key
+      PUBLIC_URL: http://localhost:8094
+      SETUP_OPEN: "true"
+      # The app's build (npm run build), as CI serves it: read per request.
+      # The repository is mounted, not build/: a build replaces that folder,
+      # which a mount of it would keep pointing to.
+      WEB_DIR: /repo/build
+    volumes:
+      - ./data/secrets:/run/secrets
+      - ./data/files-fresh:/files
+      - .:/repo:ro
+    ports:
+      - 127.0.0.1:8094:8080
+    healthcheck:
+      test: ["CMD", "/theca-server", "healthcheck"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
