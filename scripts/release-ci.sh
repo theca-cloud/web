@@ -2,8 +2,10 @@
 # The release pipeline's steps (.woodpecker/release.yaml). The version is
 # package.json's (written by scripts/release.sh). Needs GITEA_TOKEN.
 #   tags     the image tags in .tags: X.Y.Z, X.Y, X, latest on prod (refusing a
-#            version already released); X.Y.Z-rc, X.Y-rc, X-rc, rc on dev
-#   publish  the tag and the Gitea release, with this version's changelog (prod)
+#            version already released); X.Y.Z-rc, X.Y-rc, X-rc, rc on dev; and
+#            the core it's for, as the image's label `org.theca.core`
+#   publish  the tag and the Gitea release: the core it's for, and this
+#            version's changelog (prod)
 #            DRY_RUN=1: prints the release, publishes nothing
 set -eu
 cd "$(dirname "$0")/.."
@@ -11,6 +13,8 @@ cd "$(dirname "$0")/.."
 gitea=https://git.pband.ch
 repo=theca/web
 version=$(jq -r .version package.json)
+# The core release this build is for: the one pin (decisions.md, web pins core).
+core=$(jq -r '.dependencies["@theca/client"]' package.json)
 branch=${CI_COMMIT_BRANCH:-$(git branch --show-current)}
 
 case "${1:-}" in
@@ -29,9 +33,15 @@ tags)
         printf '%s\n' rc "$major-rc" "$minor-rc" "$version-rc" >.tags
     fi
     cat .tags
+    # The image says which core it's for, read from the registry without
+    # pulling (`ce` picks its core from it). The buildx plugin's build args are
+    # static: the label goes into the Dockerfile the image step builds.
+    printf 'LABEL org.theca.core="%s"\n' "$core" >>Dockerfile
+    tail -1 Dockerfile
     ;;
 publish)
     notes=$(awk -v v="## [$version]" 'index($0, v) == 1 {on = 1; next} /^## \[/ {on = 0} on' CHANGELOG.md)
+    notes=$(printf 'Built for core %s.\n%s' "$core" "$notes")
     release=$(jq -n --arg tag "v$version" --arg sha "${CI_COMMIT_SHA:-$(git rev-parse HEAD)}" --arg body "$notes" \
         '{tag_name: $tag, target_commitish: $sha, name: $tag, body: $body}')
     if [ -n "${DRY_RUN:-}" ]; then

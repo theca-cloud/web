@@ -24,4 +24,8 @@ scripts/api-types.sh           # the API types from the pinned core release (aft
 scripts/release.sh --dry-run   # the next version and its changelog (releases: see CONTRIBUTING.md)
 ```
 
+## The image
+
+`git.pband.ch/theca/web:<version>` holds only the build, in `/web/` (`FROM scratch`): the CE image copies it and points the core server at it (`WEB_DIR`). Its label `org.theca.core` names the core release it's built for, the one pin (`@theca/client` in `package.json`): the CE takes its core version from there.
+
 License: AGPL-3.0.
