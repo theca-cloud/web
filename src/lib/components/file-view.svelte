@@ -79,7 +79,7 @@
 		</h1>
 		<p class="text-sm text-muted-foreground">
 			{formatSize(file.size ?? 0)}
-			{#if previewed}· {m.file_modified({ date: formatDate(previewed.created_at) })}{/if}
+			{#if previewed}· {m.file_modified({ date: formatDate(previewed.modified) })}{/if}
 		</p>
 		<div class="flex flex-wrap gap-2">
 			<Button size="sm" onclick={() => download(file)}>
