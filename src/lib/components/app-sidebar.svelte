@@ -13,6 +13,7 @@
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SearchIcon from '@lucide/svelte/icons/search';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import ConfirmDialog from '#lib/components/confirm-dialog.svelte';
 	import NameDialog from '#lib/components/name-dialog.svelte';
@@ -37,6 +38,7 @@
 	);
 
 	let creating: NameDialog;
+	let founding: NameDialog;
 	let renaming: NameDialog;
 	let createIn = $state('');
 	let renamed = $state<Library>();
@@ -50,6 +52,13 @@
 		event.preventDefault();
 		const q = new URLSearchParams({ q: query.trim() });
 		goto(`/search?${q}&${here}`);
+	}
+
+	async function found(name: string) {
+		const result = await call(api.POST('/api/v1/organizations', { body: { name } }));
+		if (!result.ok) return explain(result.error);
+		await invalidate('app:libraries');
+		await goto(`/${result.data.id}/settings`);
 	}
 
 	async function create(name: string) {
@@ -145,6 +154,20 @@
 				>
 					<PlusIcon />
 				</Sidebar.GroupAction>
+				{#if organization.owner && !organization.personal}
+					<!-- Left of the "+" (a group's actions sit at its right edge). -->
+					<Sidebar.GroupAction class="right-9" title={m.organization_settings()}>
+						{#snippet child({ props })}
+							<a
+								href="/{organization.organization}/settings"
+								{...props}
+								aria-label="{m.organization_settings()} {name}"
+							>
+								<SettingsIcon />
+							</a>
+						{/snippet}
+					</Sidebar.GroupAction>
+				{/if}
 				<Sidebar.GroupContent>
 					<Sidebar.Menu>
 						{#each libraries.filter((l) => l.organization === organization.organization) as library (library.id)}
@@ -187,6 +210,18 @@
 				</Sidebar.GroupContent>
 			</Sidebar.Group>
 		{/each}
+		{#if me.can_create_organizations}
+			<Sidebar.Group>
+				<Sidebar.Menu>
+					<Sidebar.MenuItem>
+						<Sidebar.MenuButton class="text-muted-foreground" onclick={() => founding.show()}>
+							<PlusIcon />
+							<span>{m.organization_new()}</span>
+						</Sidebar.MenuButton>
+					</Sidebar.MenuItem>
+				</Sidebar.Menu>
+			</Sidebar.Group>
+		{/if}
 	</Sidebar.Content>
 	<Sidebar.Footer>
 		<Sidebar.Menu>
@@ -230,6 +265,7 @@
 	</Sidebar.Footer>
 </Sidebar.Root>
 
+<NameDialog bind:this={founding} title={m.organization_new()} action={m.create()} submit={found} />
 <NameDialog bind:this={creating} title={m.new_library()} action={m.create()} submit={create} />
 <NameDialog bind:this={renaming} title={m.rename()} action={m.rename()} submit={rename} />
 

@@ -7,7 +7,7 @@ const check = (page: Page, name: string) =>
 
 /** Opens a folder of the listing, waiting for it (an upload right away would go to the previous one). */
 async function openFolder(page: Page, name: string) {
-	await page.getByRole('link', { name }).click();
+	await page.getByRole('link', { name, exact: true }).click();
 	await expect(page.getByRole('navigation', { name: 'breadcrumb' })).toContainText(name);
 }
 
@@ -152,7 +152,7 @@ test('previews: shown as the browser can, never running script', async ({ page }
 		const preview = page.getByRole('region', { name: en.preview });
 		const open = async (name: string) => {
 			await page.goto(`/${library.organization}/${library.id}`);
-			await page.getByRole('link', { name }).click();
+			await page.getByRole('link', { name, exact: true }).click();
 			await expect(page.getByRole('heading', { name })).toBeVisible();
 		};
 

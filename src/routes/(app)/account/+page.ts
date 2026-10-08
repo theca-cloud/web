@@ -1,10 +1,10 @@
 import { api, call } from '#lib/api.js';
 
 /**
- * The account's sessions and app passwords, and (a full session only) its ways
- * to log in and the providers it may link. A session restricted to an
- * organization (logged in through its provider) gets only the first two: the
- * server refuses it the rest (`full_session_required`).
+ * The account's sessions, app passwords, ways to log in and the providers it
+ * may link. A session restricted to an organization (logged in through its
+ * provider) gets its app passwords only: the server refuses it the rest
+ * (`full_session_required`, said by the sessions' answer).
  */
 export async function load({ fetch, depends }) {
 	depends('app:account');
@@ -12,8 +12,7 @@ export async function load({ fetch, depends }) {
 		call(api.GET('/api/v1/auth/sessions', { fetch })),
 		call(api.GET('/api/v1/auth/app-passwords', { fetch }))
 	]);
-	const all = sessions.expect('the account’s sessions');
-	const restricted = all.some((s) => s.current && s.restricted_to);
+	const restricted = !sessions.ok && sessions.error.code === 'full_session_required';
 	const [identities, providers] = restricted
 		? [[], []]
 		: await Promise.all([
@@ -25,7 +24,7 @@ export async function load({ fetch, depends }) {
 				)
 			]);
 	return {
-		sessions: all,
+		sessions: restricted ? [] : sessions.expect('the account’s sessions'),
 		appPasswords: appPasswords.expect('the account’s app passwords'),
 		identities,
 		providers,

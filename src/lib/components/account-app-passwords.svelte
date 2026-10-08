@@ -11,6 +11,7 @@
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import * as Table from '#lib/components/ui/table/index.js';
+	import { NativeSelect } from '#lib/components/ui/native-select/index.js';
 	import { api, call } from '#lib/api.js';
 	import { explain } from '#lib/errors.js';
 	import { formatDate } from '#lib/format.js';
@@ -130,11 +131,7 @@
 	</div>
 	<div class="grid gap-2">
 		<Label for="app-password-scope">{m.app_password_scope()}</Label>
-		<select
-			id="app-password-scope"
-			bind:value={scope}
-			class="h-9 rounded-md border bg-transparent px-2 text-sm"
-		>
+		<NativeSelect id="app-password-scope" bind:value={scope} class="w-full">
 			<option value="">{m.app_password_everything()}</option>
 			{#each organizations.filter((o) => o.joined) as org (org.organization)}
 				<option value="o:{org.organization}">{orgName(org.organization)}</option>
@@ -142,7 +139,7 @@
 					<option value="l:{library.id}">{orgName(org.organization)} / {library.name}</option>
 				{/each}
 			{/each}
-		</select>
+		</NativeSelect>
 	</div>
 	<Label class="flex items-center gap-2 font-normal">
 		<Checkbox bind:checked={readOnly} />

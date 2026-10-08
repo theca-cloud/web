@@ -52,7 +52,15 @@ const byCode: Record<string, (error: ApiError) => string> = {
 	last_admin: () => m.error_last_admin(),
 	totp_required: () => m.error_totp_required(),
 	totp_enabled: () => m.error_totp_enabled(),
-	session_required: () => m.error_session_required()
+	session_required: () => m.error_session_required(),
+	already_member: () => m.error_already_member(),
+	personal_organization: () => m.error_personal_organization(),
+	owner: () => m.error_owner(),
+	organization_creation_closed: () => m.error_organization_creation_closed(),
+	namespace_name_taken: () => m.error_namespace_name_taken(),
+	invalid_provider: () => m.error_invalid_provider(),
+	issuer_refused: () => m.error_issuer_refused(),
+	invalid_role: () => m.error_invalid_role()
 };
 
 /** The message for an API error. */

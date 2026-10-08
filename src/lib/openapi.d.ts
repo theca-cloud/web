@@ -2176,6 +2176,11 @@ export interface components {
              * @description The account.
              */
             account: string;
+            /**
+             * @description It may create company organizations (the setting
+             *     `organization_creation`, or an instance admin; a full session).
+             */
+            can_create_organizations?: boolean;
             /** @description Its email. */
             email: string;
             /** @description An instance admin (organizations, storages, settings). */

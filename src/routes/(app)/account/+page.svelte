@@ -1,8 +1,8 @@
 <script lang="ts">
 	// The account, one page in sections (roadmap 07): its email (never
 	// changes), password, two-factor, ways to log in, sessions, app
-	// passwords, export, deletion. A restricted session sees only its sessions
-	// and app passwords (the server refuses it the rest).
+	// passwords, export, deletion. A restricted session sees only its app
+	// passwords (the server refuses it the rest).
 	import { goto, invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import AccountAppPasswords from '#lib/components/account-app-passwords.svelte';
@@ -192,41 +192,43 @@
 		</section>
 	{/if}
 
-	<section class="grid gap-2">
-		{@render section(m.sessions())}
-		<Table.Root>
-			<Table.Body>
-				{#each data.sessions as session (session.id)}
-					<Table.Row>
-						<Table.Cell class="font-medium">
-							{browserOf(session.user_agent) ?? session.name}
-							{#if session.current}
-								<span class="ml-1 rounded bg-accent px-1.5 py-0.5 text-xs text-accent-foreground">
-									{m.session_current()}
-								</span>
-							{/if}
-						</Table.Cell>
-						<Table.Cell class="text-muted-foreground">{session.ip ?? ''}</Table.Cell>
-						<Table.Cell class="text-muted-foreground">
-							{formatDate(session.last_seen ?? session.created_at)}
-						</Table.Cell>
-						<Table.Cell class="text-right">
-							{#if !session.current}
-								<Button
-									variant="ghost"
-									size="sm"
-									aria-label="{m.revoke()} {browserOf(session.user_agent) ?? session.name}"
-									onclick={() => revokeSession(session.id)}
-								>
-									{m.revoke()}
-								</Button>
-							{/if}
-						</Table.Cell>
-					</Table.Row>
-				{/each}
-			</Table.Body>
-		</Table.Root>
-	</section>
+	{#if !data.restricted}
+		<section class="grid gap-2">
+			{@render section(m.sessions())}
+			<Table.Root>
+				<Table.Body>
+					{#each data.sessions as session (session.id)}
+						<Table.Row>
+							<Table.Cell class="font-medium">
+								{browserOf(session.user_agent) ?? session.name}
+								{#if session.current}
+									<span class="ml-1 rounded bg-accent px-1.5 py-0.5 text-xs text-accent-foreground">
+										{m.session_current()}
+									</span>
+								{/if}
+							</Table.Cell>
+							<Table.Cell class="text-muted-foreground">{session.ip ?? ''}</Table.Cell>
+							<Table.Cell class="text-muted-foreground">
+								{formatDate(session.last_seen ?? session.created_at)}
+							</Table.Cell>
+							<Table.Cell class="text-right">
+								{#if !session.current}
+									<Button
+										variant="ghost"
+										size="sm"
+										aria-label="{m.revoke()} {browserOf(session.user_agent) ?? session.name}"
+										onclick={() => revokeSession(session.id)}
+									>
+										{m.revoke()}
+									</Button>
+								{/if}
+							</Table.Cell>
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		</section>
+	{/if}
 
 	<section class="grid gap-2">
 		{@render section(m.app_passwords())}
