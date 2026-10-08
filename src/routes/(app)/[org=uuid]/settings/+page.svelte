@@ -6,10 +6,11 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import FormDialog from '#lib/components/form-dialog.svelte';
+	import TypedName from '#lib/components/typed-name.svelte';
 	import OrgGroups from '#lib/components/org-groups.svelte';
 	import OrgLibraries from '#lib/components/org-libraries.svelte';
 	import OrgMembers from '#lib/components/org-members.svelte';
-	import OrgProvider from '#lib/components/org-provider.svelte';
+	import IdentityProviders from '#lib/components/identity-providers.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
@@ -64,7 +65,7 @@
 	}
 
 	async function deleteOrganization() {
-		if (typed !== data.organization.name) return m.organization_delete_mismatch();
+		if (typed !== data.organization.name) return m.typed_mismatch();
 		const params = { path: { id } };
 		const result = await call(api.DELETE('/api/v1/organizations/{id}', { params }));
 		if (!result.ok) return explain(result.error);
@@ -106,7 +107,30 @@
 
 	<section class="grid gap-2">
 		{@render section(m.provider())}
-		<OrgProvider organization={id} providers={data.providers} />
+		<IdentityProviders
+			providers={data.providers}
+			text={m.provider_text()}
+			save={(body, provider) =>
+				provider
+					? call(
+							api.PATCH('/api/v1/organizations/{id}/identity-providers/{provider}', {
+								params: { path: { id, provider } },
+								body
+							})
+						)
+					: call(
+							api.POST('/api/v1/organizations/{id}/identity-providers', {
+								params: { path: { id } },
+								body
+							})
+						)}
+			remove={(provider) =>
+				call(
+					api.DELETE('/api/v1/organizations/{id}/identity-providers/{provider}', {
+						params: { path: { id, provider } }
+					})
+				)}
+		/>
 	</section>
 
 	<section class="grid gap-2">
@@ -155,9 +179,5 @@
 	destructive
 	submit={deleteOrganization}
 >
-	<p class="text-sm">
-		{m.organization_delete_type()}
-		<code class="rounded bg-muted px-1 font-mono select-all">{data.organization.name}</code>
-	</p>
-	<Input aria-label={m.organization_name()} autocomplete="off" required bind:value={typed} />
+	<TypedName name={data.organization.name} label={m.organization_name()} bind:value={typed} />
 </FormDialog>

@@ -1,8 +1,10 @@
 <script lang="ts">
-	// The organization's login providers (OIDC; one in practice): its logins
-	// open sessions restricted to the organization. Each shows the callback URL
-	// to register at the provider and the login link to share (the login page
-	// lists only instance-wide providers). The secret is written, never shown.
+	// Login providers (OIDC): an organization's (its logins open sessions
+	// restricted to it; its login link shared, the login page lists only the
+	// instance's) or the instance's (full sessions). Each shows the callback
+	// URL to register at the provider and its login link. The secret is
+	// written, never shown; the instance's may be a file path instead (the
+	// admin owns the server), an organization's never (decisions.md).
 	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import ConfirmDialog from '#lib/components/confirm-dialog.svelte';
@@ -11,14 +13,31 @@
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
-	import { api, call } from '#lib/api.js';
+	import type { ApiError } from '#lib/api.js';
 	import { explain } from '#lib/errors.js';
 	import type { components } from '#lib/openapi.js';
 	import { m } from '#lib/paraglide/messages.js';
+	import type { Result } from '#lib/result.js';
 
 	type Provider = components['schemas']['ProviderInfo'];
+	type Request = components['schemas']['ProviderRequest'];
+	type Done = Promise<Result<unknown, ApiError>>;
 
-	let { organization, providers }: { organization: string; providers: Provider[] } = $props();
+	let {
+		providers,
+		text,
+		save,
+		remove: drop,
+		secretFile = false
+	}: {
+		providers: Provider[];
+		text: string;
+		/** Creates (no id) or changes a provider. */
+		save: (body: Request, id?: string) => Done;
+		remove: (id: string) => Done;
+		/** The secret may be a file path on the server (the instance's providers). */
+		secretFile?: boolean;
+	} = $props();
 
 	let editing: FormDialog;
 	let confirm: ConfirmDialog;
@@ -27,6 +46,7 @@
 	let issuer = $state('');
 	let clientId = $state('');
 	let secret = $state('');
+	let secretPath = $state('');
 	let enabled = $state(true);
 
 	const link = (p: Provider, end: 'callback' | 'start') =>
@@ -38,6 +58,7 @@
 		issuer = p?.issuer ?? '';
 		clientId = p?.client_id ?? '';
 		secret = '';
+		secretPath = p?.client_secret_file ?? '';
 		enabled = p?.enabled ?? true;
 		editing.show();
 	}
@@ -49,23 +70,13 @@
 			client_id: clientId.trim(),
 			enabled,
 			// Unchanged when left empty (it's never shown back).
-			client_secret: secret || null
+			client_secret: secret || null,
+			client_secret_file: secretFile && secretPath.trim() ? secretPath.trim() : null
 		};
-		const result = edited
-			? await call(
-					api.PATCH('/api/v1/organizations/{id}/identity-providers/{provider}', {
-						params: { path: { id: organization, provider: edited.id } },
-						body
-					})
-				)
-			: await call(
-					api.POST('/api/v1/organizations/{id}/identity-providers', {
-						params: { path: { id: organization } },
-						body
-					})
-				);
+		const result = await save(body, edited?.id);
 		if (!result.ok) return explain(result.error);
 		await invalidate('app:organization');
+		await invalidate('app:admin');
 	}
 
 	async function remove(p: Provider) {
@@ -75,19 +86,17 @@
 			action: m.delete()
 		});
 		if (!sure) return;
-		const params = { path: { id: organization, provider: p.id } };
-		const result = await call(
-			api.DELETE('/api/v1/organizations/{id}/identity-providers/{provider}', { params })
-		);
+		const result = await drop(p.id);
 		if (result.ok) {
 			await invalidate('app:organization');
+			await invalidate('app:admin');
 		} else {
 			toast.error(explain(result.error));
 		}
 	}
 </script>
 
-<p class="text-sm text-muted-foreground">{m.provider_text()}</p>
+<p class="text-sm text-muted-foreground">{text}</p>
 {#each providers as p (p.id)}
 	<div class="grid gap-2 rounded-lg border p-3 text-sm">
 		<div class="flex items-center gap-2">
@@ -150,11 +159,23 @@
 			id="provider-secret"
 			type="password"
 			autocomplete="off"
-			required={!edited}
+			required={!edited && !(secretFile && secretPath)}
 			placeholder={edited ? m.provider_secret_unchanged() : ''}
 			bind:value={secret}
 		/>
 	</div>
+	{#if secretFile}
+		<div class="grid gap-2">
+			<Label for="provider-secret-file">{m.provider_secret_file()}</Label>
+			<Input
+				id="provider-secret-file"
+				autocomplete="off"
+				placeholder="/run/secrets/oidc"
+				bind:value={secretPath}
+			/>
+			<p class="text-xs text-muted-foreground">{m.provider_secret_file_hint()}</p>
+		</div>
+	{/if}
 	<Label class="flex items-center gap-2 font-normal">
 		<Checkbox bind:checked={enabled} />
 		{m.provider_enabled()}

@@ -60,7 +60,9 @@ const byCode: Record<string, (error: ApiError) => string> = {
 	namespace_name_taken: () => m.error_namespace_name_taken(),
 	invalid_provider: () => m.error_invalid_provider(),
 	issuer_refused: () => m.error_issuer_refused(),
-	invalid_role: () => m.error_invalid_role()
+	invalid_role: () => m.error_invalid_role(),
+	unknown_setting: () => m.error_unknown_setting(),
+	invalid_setting: () => m.error_invalid_setting()
 };
 
 /** The message for an API error. */

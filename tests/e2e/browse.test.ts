@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import {
 	admin,
 	adminOrganization,
+	anOrganization,
 	asAdmin,
 	dropLibrary,
 	en,
@@ -22,7 +23,7 @@ test('the frame: sidebar, folders, breadcrumbs, deep links', async ({ page }) =>
 	const library = await newLibrary('Frame', ['Inside', 'Inside/Deeper']);
 	try {
 		await logIn(page, admin.email, admin.password);
-		await expect(page).toHaveURL(`/${library.organization}`);
+		await expect(page).toHaveURL(anOrganization);
 		await page.getByRole('link', { name: library.name }).first().click();
 		await expect(page).toHaveURL(`/${library.organization}/${library.id}`);
 		await page.getByRole('link', { name: 'Inside' }).click();
@@ -178,5 +179,5 @@ test('a 404 stays in the frame, with a way back', async ({ page }) => {
 		await expect(page.getByRole('button', { name: en.account_menu })).toBeVisible();
 	}
 	await page.getByRole('link', { name: en.back_home }).click();
-	await expect(page).toHaveURL(`/${organization}`);
+	await expect(page).toHaveURL(anOrganization);
 });

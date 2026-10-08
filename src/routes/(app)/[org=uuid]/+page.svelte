@@ -4,18 +4,16 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import NameDialog from '#lib/components/name-dialog.svelte';
+	import Usage from '#lib/components/usage.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Table from '#lib/components/ui/table/index.js';
 	import { api, call } from '#lib/api.js';
 	import { explain } from '#lib/errors.js';
-	import { formatSize } from '#lib/format.js';
 	import { m } from '#lib/paraglide/messages.js';
 
 	let { data } = $props();
 
 	let creating: NameDialog;
-	const used = $derived(data.usage.used);
-	const quota = $derived(data.usage.quota);
 
 	async function create(name: string) {
 		const body = { organization: data.organization.organization, name };
@@ -39,28 +37,7 @@
 			</Button>
 		{/if}
 	</div>
-	<div class="grid max-w-sm gap-1">
-		<p class="text-sm text-muted-foreground">
-			{quota
-				? m.usage_of({ used: formatSize(used), quota: formatSize(quota) })
-				: m.usage({ used: formatSize(used) })}
-		</p>
-		{#if quota}
-			<div
-				role="meter"
-				aria-label={m.usage_label()}
-				aria-valuemin={0}
-				aria-valuemax={quota}
-				aria-valuenow={used}
-				class="h-1.5 overflow-hidden rounded-full bg-muted"
-			>
-				<div
-					class={['h-full', used / quota > 0.9 ? 'bg-destructive' : 'bg-primary']}
-					style:width="{Math.min(100, (used / quota) * 100)}%"
-				></div>
-			</div>
-		{/if}
-	</div>
+	<Usage used={data.usage.used} quota={data.usage.quota} />
 	{#if data.libraries.length === 0}
 		<p class="text-muted-foreground">{m.organization_empty()}</p>
 	{:else}

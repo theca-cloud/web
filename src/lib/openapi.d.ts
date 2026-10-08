@@ -167,7 +167,11 @@ export interface paths {
         delete: operations["admin_delete_organization"];
         options?: never;
         head?: never;
-        /** Rename, set the quota, suspend or lift, set the default storage. */
+        /**
+         * Rename, set the quota, suspend or lift, set the default storage, give it
+         *     another owner (a joined member, by email: an owner gone or mistaken
+         *     otherwise leaves only the deletion).
+         */
         patch: operations["update_organization"];
         trace?: never;
     };
@@ -2797,6 +2801,8 @@ export interface components {
             default_storage?: string | null;
             /** @description A new name. */
             name?: string | null;
+            /** @description A new owner: a joined member's email (a company organization). */
+            owner?: string | null;
             /**
              * Format: int64
              * @description A quota in bytes, or `null` for unlimited.
@@ -3259,7 +3265,17 @@ export interface operations {
                     "application/json": components["schemas"]["AdminOrganization"];
                 };
             };
+            /** @description No such organization, storage, or joined member (the owner) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description `personal_organization` (a new owner) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

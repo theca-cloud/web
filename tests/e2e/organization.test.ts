@@ -87,7 +87,7 @@ test('an organization: created, renamed, a member invited and given a library, o
 	const confirm = member.getByRole('dialog');
 	await confirm.getByLabel(en.organization_name).fill('not it');
 	await confirm.getByRole('button', { name: en.organization_delete }).click();
-	await expect(confirm.getByRole('alert')).toHaveText(en.organization_delete_mismatch);
+	await expect(confirm.getByRole('alert')).toHaveText(en.typed_mismatch);
 	await confirm.getByLabel(en.organization_name).fill(`${name} SA`);
 	await confirm.getByRole('button', { name: en.organization_delete }).click();
 	await expect(member.getByRole('link', { name: `${name} SA` })).toHaveCount(0);

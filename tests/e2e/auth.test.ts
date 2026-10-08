@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
 	admin,
+	adminOrganization,
 	asAdmin,
 	emailLink,
 	en,
@@ -87,11 +88,7 @@ test('a forgotten password, reset through the email', async ({ page }) => {
 });
 
 test('an invitation, accepted through the email', async ({ page }) => {
-	const me = await asAdmin<{ organizations: { organization: string; personal: boolean }[] }>(
-		'GET',
-		'/api/v1/me'
-	);
-	const organization = me.organizations[0].organization;
+	const organization = await adminOrganization();
 	const email = freshEmail('invited');
 	await asAdmin('POST', `/api/v1/organizations/${organization}/members`, { email });
 

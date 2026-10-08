@@ -14,6 +14,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import ConfirmDialog from '#lib/components/confirm-dialog.svelte';
 	import NameDialog from '#lib/components/name-dialog.svelte';
@@ -250,6 +251,12 @@
 							<CircleUserIcon />
 							{m.account()}
 						</DropdownMenu.Item>
+						{#if me.instance_admin}
+							<DropdownMenu.Item onSelect={() => goto('/admin')}>
+								<ShieldIcon />
+								{m.admin()}
+							</DropdownMenu.Item>
+						{/if}
 						<DropdownMenu.Item onSelect={() => goto('/about')}>
 							<InfoIcon />
 							{m.about_title()}
