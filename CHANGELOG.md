@@ -1,6 +1,11 @@
 # Changelog
 
 Every release of the web app: the `web` image holding its build, assembled with `core` by `ce`.
+## [0.3.0] - 2026-10-08
+
+### Features
+
+- Core 0.18.0, uploads keep their files' modification times
 ## [0.2.1] - 2026-10-08
 
 ### Fixes
