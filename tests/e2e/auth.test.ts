@@ -52,10 +52,15 @@ test('registering, through the email', async ({ page }) => {
 	await page.getByRole('link', { name: en.login_register }).click();
 	await expect(page).toHaveURL('/register');
 	await page.getByLabel(en.email).fill(email);
-	await page.getByLabel(en.password).fill('short');
+	// Scored as the server will, then refused by it all the same.
+	await page.getByLabel(en.password).fill('password1234');
+	await expect(page.getByRole('meter', { name: en.strength })).toHaveAttribute(
+		'aria-valuenow',
+		'1'
+	);
 	await page.getByRole('button', { name: en.register_submit }).click();
-	await expect(page.getByRole('alert')).toContainText('8 characters');
-	await page.getByLabel(en.password).fill('a test password');
+	await expect(page.getByRole('alert')).toHaveText(en.error_weak_password);
+	await page.getByLabel(en.password).fill('violet tractor on the moon');
 	await page.getByRole('button', { name: en.register_submit }).click();
 	await expect(page.getByText(en.register_sent)).toBeVisible();
 
@@ -74,10 +79,10 @@ test('a forgotten password, reset through the email', async ({ page }) => {
 	await expect(page.getByText(en.reset_sent)).toBeVisible();
 
 	await page.goto(await emailLink(account.email));
-	await page.getByLabel(en.new_password).fill('another test password');
+	await page.getByLabel(en.new_password).fill('violet tractor on the moon');
 	await page.getByRole('button', { name: en.reset_submit }).click();
 	await expect(page.getByText(en.reset_done)).toBeVisible();
-	await logIn(page, account.email, 'another test password');
+	await logIn(page, account.email, 'violet tractor on the moon');
 	await expect(page.getByRole('button', { name: en.account_menu })).toHaveText(account.email);
 });
 
@@ -91,7 +96,14 @@ test('an invitation, accepted through the email', async ({ page }) => {
 	await asAdmin('POST', `/api/v1/organizations/${organization}/members`, { email });
 
 	await page.goto(await emailLink(email));
-	await page.getByLabel(en.new_password).fill('a test password');
+	// The page knows the address the link is for, and scores against it.
+	await expect(page.getByText(email)).toBeVisible();
+	await page.getByLabel(en.new_password).fill(email);
+	await expect(page.getByRole('meter', { name: en.strength })).not.toHaveAttribute(
+		'aria-valuenow',
+		/[34]/
+	);
+	await page.getByLabel(en.new_password).fill('violet tractor on the moon');
 	await page.getByRole('button', { name: en.invite_submit }).click();
 	await expect(page).toHaveURL(anOrganization);
 	await expect(page.getByRole('button', { name: en.account_menu })).toHaveText(email);
@@ -109,7 +121,7 @@ test('setting up a fresh instance', async ({ page }) => {
 	const email = freshEmail('admin');
 	await page.goto(`${fresh}/setup`);
 	await page.getByLabel(en.email).fill(email);
-	await page.getByLabel(en.password).fill('a test password');
+	await page.getByLabel(en.password).fill('violet tractor on the moon');
 	await page.getByLabel(en.setup_organization_hint).fill('Fresh');
 	await page.getByLabel(en.setup_path).fill(freshStorage);
 	await page.getByRole('button', { name: en.setup_submit }).click();

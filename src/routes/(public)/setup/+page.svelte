@@ -4,11 +4,14 @@
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
+	import NewPassword from '#lib/components/new-password.svelte';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { api, call } from '#lib/api.js';
 	import { explain } from '#lib/errors.js';
 	import { m } from '#lib/paraglide/messages.js';
+
+	let { data } = $props();
 
 	let email = $state('');
 	let password = $state('');
@@ -73,16 +76,12 @@
 					<Label for="email">{m.email()}</Label>
 					<Input id="email" type="email" autocomplete="username" required bind:value={email} />
 				</div>
-				<div class="grid gap-2">
-					<Label for="password">{m.password()}</Label>
-					<Input
-						id="password"
-						type="password"
-						autocomplete="new-password"
-						required
-						bind:value={password}
-					/>
-				</div>
+				<NewPassword
+					bind:value={password}
+					{email}
+					level={data.instance.password_strength}
+					label={m.password()}
+				/>
 			</fieldset>
 			<fieldset class="grid gap-2">
 				<legend class="mb-2 font-medium">{m.setup_organization()}</legend>

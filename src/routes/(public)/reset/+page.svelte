@@ -3,11 +3,14 @@
 	import * as Alert from '#lib/components/ui/alert/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import * as Card from '#lib/components/ui/card/index.js';
+	import NewPassword from '#lib/components/new-password.svelte';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { api, call } from '#lib/api.js';
 	import { explain } from '#lib/errors.js';
 	import { m } from '#lib/paraglide/messages.js';
+
+	let { data } = $props();
 
 	// With a link's token: the new password; without: asking for a link.
 	const token = $derived(page.url.searchParams.get('token'));
@@ -43,19 +46,18 @@
 			<Alert.Root>
 				<Alert.Description>{done}</Alert.Description>
 			</Alert.Root>
+		{:else if data.error}
+			<Alert.Root variant="destructive">
+				<Alert.Description>{data.error}</Alert.Description>
+			</Alert.Root>
 		{:else}
 			<form class="grid gap-4" onsubmit={submit}>
 				{#if token}
-					<div class="grid gap-2">
-						<Label for="password">{m.new_password()}</Label>
-						<Input
-							id="password"
-							type="password"
-							autocomplete="new-password"
-							required
-							bind:value={password}
-						/>
-					</div>
+					<NewPassword
+						bind:value={password}
+						email={data.email ?? ''}
+						level={data.instance.password_strength}
+					/>
 				{:else}
 					<p class="text-sm text-muted-foreground">{m.reset_ask()}</p>
 					<div class="grid gap-2">

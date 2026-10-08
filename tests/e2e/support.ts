@@ -105,7 +105,7 @@ export const anOrganization = /\/[0-9a-f-]{36}$/;
 /** A new account, verified (registration opened for it), and its password. */
 export async function newAccount(label: string): Promise<{ email: string; password: string }> {
 	await asAdmin('PATCH', '/api/v1/admin/settings', { registration: 'open' });
-	const account = { email: freshEmail(label), password: 'a test password' };
+	const account = { email: freshEmail(label), password: 'correct horse battery staple' };
 	await fetch(`${server}/api/v1/auth/register`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },

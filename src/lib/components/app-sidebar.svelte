@@ -5,6 +5,7 @@
 	import { goto, invalidate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
+	import CircleUserIcon from '@lucide/svelte/icons/circle-user';
 	import ChevronsUpDownIcon from '@lucide/svelte/icons/chevrons-up-down';
 	import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
 	import InfoIcon from '@lucide/svelte/icons/info';
@@ -210,6 +211,10 @@
 						{/snippet}
 					</DropdownMenu.Trigger>
 					<DropdownMenu.Content side="top" align="start">
+						<DropdownMenu.Item onSelect={() => goto('/account')}>
+							<CircleUserIcon />
+							{m.account()}
+						</DropdownMenu.Item>
 						<DropdownMenu.Item onSelect={() => goto('/about')}>
 							<InfoIcon />
 							{m.about_title()}

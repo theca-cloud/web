@@ -10,7 +10,7 @@ const byCode: Record<string, (error: ApiError) => string> = {
 	email_not_verified: () => m.error_email_not_verified(),
 	account_suspended: () => m.error_account_suspended(),
 	invalid_email: () => m.error_invalid_email(),
-	weak_password: (e) => m.error_weak_password({ message: e.message }),
+	weak_password: () => m.error_weak_password(),
 	registration_closed: () => m.error_registration_closed(),
 	email_unavailable: () => m.error_email_unavailable(),
 	invalid_token: () => m.error_invalid_token(),
@@ -44,7 +44,15 @@ const byCode: Record<string, (error: ApiError) => string> = {
 	unexpected_answer: () => m.error_unexpected_answer(),
 	unsupported_server: () => m.error_unsupported_server(),
 	query_too_short: () => m.error_query_too_short(),
-	invalid_scope: () => m.error_invalid_scope()
+	invalid_scope: () => m.error_invalid_scope(),
+	no_password: () => m.error_no_password(),
+	last_identity: () => m.error_last_identity(),
+	full_session_required: () => m.error_full_session_required(),
+	owns_organizations: () => m.error_owns_organizations(),
+	last_admin: () => m.error_last_admin(),
+	totp_required: () => m.error_totp_required(),
+	totp_enabled: () => m.error_totp_enabled(),
+	session_required: () => m.error_session_required()
 };
 
 /** The message for an API error. */

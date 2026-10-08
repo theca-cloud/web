@@ -70,10 +70,10 @@ export interface paths {
             cookie?: never;
         };
         /** The instance-wide identity providers. */
-        get: operations["providers"];
+        get: operations["admin_providers"];
         put?: never;
         /** Add an instance-wide identity provider (full sessions for its logins). */
-        post: operations["create_provider"];
+        post: operations["admin_create_provider"];
         delete?: never;
         options?: never;
         head?: never;
@@ -91,11 +91,11 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete an instance-wide identity provider, and the identities linked through it. */
-        delete: operations["delete_provider"];
+        delete: operations["admin_delete_provider"];
         options?: never;
         head?: never;
         /** Change an instance-wide identity provider. */
-        patch: operations["update_provider"];
+        patch: operations["admin_update_provider"];
         trace?: never;
     };
     "/api/v1/admin/jobs": {
@@ -143,7 +143,7 @@ export interface paths {
         get: operations["organizations"];
         put?: never;
         /** Create an organization owned by an existing account. */
-        post: operations["create_organization"];
+        post: operations["admin_create_organization"];
         delete?: never;
         options?: never;
         head?: never;
@@ -164,7 +164,7 @@ export interface paths {
          * Delete an organization (personal ones included): its data at once, its
          *     stored chunks with the garbage collection, started now.
          */
-        delete: operations["delete_organization"];
+        delete: operations["admin_delete_organization"];
         options?: never;
         head?: never;
         /** Rename, set the quota, suspend or lift, set the default storage. */
@@ -241,7 +241,7 @@ export interface paths {
          * Create an app password, within what this session reaches (a restricted
          *     session: inside its organization). The password is shown only once.
          */
-        post: operations["create"];
+        post: operations["create_app_password"];
         delete?: never;
         options?: never;
         head?: never;
@@ -259,7 +259,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Revoke an app password: refused at once. */
-        delete: operations["revoke"];
+        delete: operations["revoke_app_password"];
         options?: never;
         head?: never;
         patch?: never;
@@ -353,7 +353,7 @@ export interface paths {
          * The instance-wide providers, for the login page. An organization's
          *     provider isn't listed: the organization shares its start link.
          */
-        get: operations["providers"];
+        get: operations["login_providers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -411,9 +411,30 @@ export interface paths {
             cookie?: never;
         };
         /** Start logging in with a provider: redirects to it. */
-        get: operations["start"];
+        get: operations["oidc_start"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the password (a full session, the current one asked): every other
+         *     session is logged out, this one kept. Failed attempts count as failed
+         *     logins. Without a password (OIDC only), the reset email sets one.
+         */
+        post: operations["change_password"];
         delete?: never;
         options?: never;
         head?: never;
@@ -506,7 +527,28 @@ export interface paths {
         put?: never;
         post?: never;
         /** Revoke one of the account's sessions (e.g. a lost device). */
-        delete: operations["revoke"];
+        delete: operations["revoke_session"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The email a reset or invitation link is for, without using it: the page
+         *     choosing a password scores it against the email. Holding the token proves
+         *     the inbox, so the address tells nothing new.
+         */
+        post: operations["token_email"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -525,7 +567,7 @@ export interface paths {
          * Start setting up TOTP: a new secret, not required at login until
          *     confirmed. Starting again replaces an unconfirmed secret.
          */
-        post: operations["start"];
+        post: operations["totp_start"];
         delete?: never;
         options?: never;
         head?: never;
@@ -891,7 +933,7 @@ export interface paths {
             cookie?: never;
         };
         /** A library's members (its members, and the organization's owner). */
-        get: operations["members"];
+        get: operations["library_members"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1246,7 +1288,7 @@ export interface paths {
          * Create a company organization, owned by the account (from a full session;
          *     instance admins only when `organization_creation` is `admins`).
          */
-        post: operations["create"];
+        post: operations["create_organization"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1283,14 +1325,14 @@ export interface paths {
             cookie?: never;
         };
         /** The organization's identity providers (the owner). */
-        get: operations["providers"];
+        get: operations["organization_providers"];
         put?: never;
         /**
          * Add an identity provider for the organization (the owner): its logins open
          *     sessions restricted to the organization. `https` issuers on public
          *     addresses only; the secret as a value (stored encrypted).
          */
-        post: operations["create_provider"];
+        post: operations["organization_create_provider"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1311,11 +1353,11 @@ export interface paths {
          * Delete one of the organization's identity providers, and the identities
          *     linked through it (the owner).
          */
-        delete: operations["delete_provider"];
+        delete: operations["organization_delete_provider"];
         options?: never;
         head?: never;
         /** Change one of the organization's identity providers (the owner). */
-        patch: operations["update_provider"];
+        patch: operations["organization_update_provider"];
         trace?: never;
     };
     "/api/v1/organizations/{id}/libraries": {
@@ -1346,7 +1388,7 @@ export interface paths {
             cookie?: never;
         };
         /** The organization's members and pending invitations (any member). */
-        get: operations["members"];
+        get: operations["organization_members"];
         put?: never;
         /**
          * Add a member by email (the owner): an existing account joins at once (and
@@ -1603,6 +1645,13 @@ export interface components {
             organization?: string | null;
             /** @description Read only. */
             read_only: boolean;
+        };
+        /** @description A password change: the current one, and the new one. */
+        ChangePassword: {
+            /** @description The current password. */
+            current: string;
+            /** @description The new password (at least 8 characters, and strong enough). */
+            new: string;
         };
         /**
          * @description Whether a chunk must be uploaded.
@@ -1975,6 +2024,12 @@ export interface components {
         Instance: {
             /** @description Its name (the setting `instance_name`). */
             name: string;
+            /**
+             * Format: int32
+             * @description The zxcvbn score a new password needs, 0 (none: 8 characters only) to 4
+             *     (the setting `password_strength`).
+             */
+            password_strength: number;
             /** @description Accounts can be created (`registration = open`, and SMTP configured). */
             registration: boolean;
         };
@@ -2471,7 +2526,8 @@ export interface components {
         /** @description A token from an email's link, and a password to set. */
         SetPassword: {
             /**
-             * @description The new password (at least 8 characters). Optional to accept an
+             * @description The new password (at least 8 characters, and strong enough: the
+             *     instance's `password_strength`). Optional to accept an
              *     invitation for an account that can already log in.
              */
             password?: string | null;
@@ -2560,6 +2616,11 @@ export interface components {
              * @description Bytes stored there.
              */
             used: number;
+        };
+        /** @description The account an email's link is for. */
+        TokenEmail: {
+            /** @description Its email. */
+            email: string;
         };
         /** @description A TOTP code (6 digits), or a recovery code where accepted. */
         TotpCode: {
@@ -2912,7 +2973,7 @@ export interface operations {
             };
         };
     };
-    providers: {
+    admin_providers: {
         parameters: {
             query?: never;
             header?: never;
@@ -2931,7 +2992,7 @@ export interface operations {
             };
         };
     };
-    create_provider: {
+    admin_create_provider: {
         parameters: {
             query?: never;
             header?: never;
@@ -2963,7 +3024,7 @@ export interface operations {
             };
         };
     };
-    delete_provider: {
+    admin_delete_provider: {
         parameters: {
             query?: never;
             header?: never;
@@ -2990,7 +3051,7 @@ export interface operations {
             };
         };
     };
-    update_provider: {
+    admin_update_provider: {
         parameters: {
             query?: never;
             header?: never;
@@ -3111,7 +3172,7 @@ export interface operations {
             };
         };
     };
-    create_organization: {
+    admin_create_organization: {
         parameters: {
             query?: never;
             header?: never;
@@ -3143,7 +3204,7 @@ export interface operations {
             };
         };
     };
-    delete_organization: {
+    admin_delete_organization: {
         parameters: {
             query?: never;
             header?: never;
@@ -3371,7 +3432,7 @@ export interface operations {
             };
         };
     };
-    create: {
+    create_app_password: {
         parameters: {
             query?: never;
             header?: never;
@@ -3421,7 +3482,7 @@ export interface operations {
             };
         };
     };
-    revoke: {
+    revoke_app_password: {
         parameters: {
             query?: never;
             header?: never;
@@ -3588,7 +3649,7 @@ export interface operations {
             };
         };
     };
-    providers: {
+    login_providers: {
         parameters: {
             query?: never;
             header?: never;
@@ -3623,7 +3684,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description To `/`, or to `/login?error=...` */
+            /** @description To `/` (logged in), `/account` (linked), or `/login?error=...` */
             303: {
                 headers: {
                     [name: string]: unknown;
@@ -3670,7 +3731,7 @@ export interface operations {
             };
         };
     };
-    start: {
+    oidc_start: {
         parameters: {
             query?: never;
             header?: never;
@@ -3687,6 +3748,63 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    change_password: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePassword"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `weak_password` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description `invalid_credentials` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description `full_session_required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description `no_password`: set one through the reset email */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
             };
         };
     };
@@ -3808,7 +3926,7 @@ export interface operations {
             };
         };
     };
-    revoke: {
+    revoke_session: {
         parameters: {
             query?: never;
             header?: never;
@@ -3835,7 +3953,39 @@ export interface operations {
             };
         };
     };
-    start: {
+    token_email: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkToken"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenEmail"];
+                };
+            };
+            /** @description `invalid_token` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    totp_start: {
         parameters: {
             query?: never;
             header?: never;
@@ -4532,7 +4682,7 @@ export interface operations {
             };
         };
     };
-    members: {
+    library_members: {
         parameters: {
             query?: never;
             header?: never;
@@ -5196,7 +5346,7 @@ export interface operations {
             };
         };
     };
-    create: {
+    create_organization: {
         parameters: {
             query?: never;
             header?: never;
@@ -5353,7 +5503,7 @@ export interface operations {
             };
         };
     };
-    providers: {
+    organization_providers: {
         parameters: {
             query?: never;
             header?: never;
@@ -5382,7 +5532,7 @@ export interface operations {
             };
         };
     };
-    create_provider: {
+    organization_create_provider: {
         parameters: {
             query?: never;
             header?: never;
@@ -5416,7 +5566,7 @@ export interface operations {
             };
         };
     };
-    delete_provider: {
+    organization_delete_provider: {
         parameters: {
             query?: never;
             header?: never;
@@ -5444,7 +5594,7 @@ export interface operations {
             };
         };
     };
-    update_provider: {
+    organization_update_provider: {
         parameters: {
             query?: never;
             header?: never;
@@ -5507,7 +5657,7 @@ export interface operations {
             };
         };
     };
-    members: {
+    organization_members: {
         parameters: {
             query?: never;
             header?: never;

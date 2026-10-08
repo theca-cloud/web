@@ -67,6 +67,8 @@ test('folders: created, renamed, moved, copied, deleted and undone', async ({ pa
 		await page.getByRole('button', { name: en.move_here }).click();
 		await expect(row(page, 'Beta')).toHaveCount(0);
 		await page.getByRole('link', { name: 'Target' }).click();
+		// The folder's listing, not the previous one's last moment.
+		await expect(page.getByRole('navigation', { name: 'breadcrumb' })).toContainText('Target');
 		await expect(row(page, 'Beta')).toBeVisible();
 
 		// Copied back up: the destination dialog starts here, one level up is the library.
