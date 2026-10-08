@@ -8,15 +8,17 @@ import {
 	freshEmail,
 	freshStorage,
 	logIn,
+	tryLogIn,
+	anOrganization,
 	newAccount
 } from './support';
 
 test('logging in, back where it was asked, then out', async ({ page }) => {
-	await logIn(page, admin.email, 'a wrong password');
+	await tryLogIn(page, admin.email, 'a wrong password');
 	await expect(page.getByRole('alert')).toHaveText(en.error_invalid_credentials);
 
-	await logIn(page, admin.email, admin.password, '/?from=test');
-	await expect(page).toHaveURL('/?from=test');
+	await logIn(page, admin.email, admin.password, '/about?from=test');
+	await expect(page).toHaveURL('/about?from=test');
 	await expect(page.getByRole('button', { name: en.account_menu })).toHaveText(admin.email);
 
 	await page.getByRole('button', { name: en.account_menu }).click();
@@ -40,7 +42,7 @@ test('an expired session leads to the login, then back', async ({ page, context 
 
 test('never sent elsewhere after logging in', async ({ page }) => {
 	await logIn(page, admin.email, admin.password, '//elsewhere.test/');
-	await expect(page).toHaveURL('/');
+	await expect(page).toHaveURL(anOrganization);
 });
 
 test('registering, through the email', async ({ page }) => {
@@ -58,7 +60,7 @@ test('registering, through the email', async ({ page }) => {
 	await expect(page.getByText(en.register_sent)).toBeVisible();
 
 	await page.goto(await emailLink(email));
-	await expect(page).toHaveURL('/');
+	await expect(page).toHaveURL(anOrganization);
 	await expect(page.getByRole('button', { name: en.account_menu })).toHaveText(email);
 });
 
@@ -91,7 +93,7 @@ test('an invitation, accepted through the email', async ({ page }) => {
 	await page.goto(await emailLink(email));
 	await page.getByLabel(en.new_password).fill('a test password');
 	await page.getByRole('button', { name: en.invite_submit }).click();
-	await expect(page).toHaveURL('/');
+	await expect(page).toHaveURL(anOrganization);
 	await expect(page.getByRole('button', { name: en.account_menu })).toHaveText(email);
 });
 
@@ -111,6 +113,6 @@ test('setting up a fresh instance', async ({ page }) => {
 	await page.getByLabel(en.setup_organization_hint).fill('Fresh');
 	await page.getByLabel(en.setup_path).fill(freshStorage);
 	await page.getByRole('button', { name: en.setup_submit }).click();
-	await expect(page).toHaveURL(`${fresh}/`);
+	await expect(page).toHaveURL(new RegExp(`^${fresh}/[0-9a-f-]{36}$`));
 	await expect(page.getByRole('button', { name: en.account_menu })).toHaveText(email);
 });

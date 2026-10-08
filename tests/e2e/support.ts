@@ -1,6 +1,6 @@
 // What the end-to-end tests share: the server's API as the dev admin (to set
 // things up around a flow), its emails (Mailpit), fresh accounts.
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import en from '../../messages/en.json' with { type: 'json' };
 
 export { en };
@@ -85,13 +85,22 @@ export async function emailLink(to: string): Promise<string> {
 	throw new Error(`no email to ${to}`);
 }
 
-/** Logs in through the login page. */
-export async function logIn(page: Page, email: string, password: string, next = '/') {
+/** Fills the login page in and submits it (whatever the server answers). */
+export async function tryLogIn(page: Page, email: string, password: string, next = '/') {
 	await page.goto(`/login?next=${encodeURIComponent(next)}`);
 	await page.getByLabel(en.email).fill(email);
 	await page.getByLabel(en.password).fill(password);
 	await page.getByRole('button', { name: en.login_submit }).click();
 }
+
+/** Logs in, and waits for the app: navigating at once would cancel the login. */
+export async function logIn(page: Page, email: string, password: string, next = '/') {
+	await tryLogIn(page, email, password, next);
+	await expect(page.getByRole('button', { name: en.account_menu })).toBeVisible();
+}
+
+/** A page of an organization: where `/` leads once logged in. */
+export const anOrganization = /\/[0-9a-f-]{36}$/;
 
 /** A new account, verified (registration opened for it), and its password. */
 export async function newAccount(label: string): Promise<{ email: string; password: string }> {
@@ -110,4 +119,29 @@ export async function newAccount(label: string): Promise<{ email: string; passwo
 	});
 	if (!verified.ok) throw new Error(`verify: HTTP ${verified.status}`);
 	return account;
+}
+
+type Library = { id: string; organization: string; root: string; name: string };
+
+/** The dev admin's organization (the company one the setup made). */
+export async function adminOrganization(): Promise<string> {
+	const me = await asAdmin<{ organizations: { organization: string }[] }>('GET', '/api/v1/me');
+	return me.organizations[0].organization;
+}
+
+/** A library of the dev admin's, with folders (`a`, `a/b`) in it. */
+export async function newLibrary(label: string, folders: string[] = []): Promise<Library> {
+	const name = `${label} ${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+	const organization = await adminOrganization();
+	const library = await asAdmin<Library>('POST', '/api/v1/libraries', { organization, name });
+	if (folders.length > 0) {
+		await asAdmin('POST', `/api/v1/nodes/${library.root}/folders`, { paths: folders });
+	}
+	return library;
+}
+
+/** A library gone for good (trashed first: only the trash's are purged). */
+export async function dropLibrary(library: Library) {
+	await asAdmin('DELETE', `/api/v1/libraries/${library.id}`).catch(() => {});
+	await asAdmin('DELETE', `/api/v1/libraries/${library.id}?permanent=true`).catch(() => {});
 }

@@ -24,7 +24,15 @@ const byCode: Record<string, (error: ApiError) => string> = {
 	identity_taken: () => m.error_identity_taken(),
 	oidc_expired: () => m.error_oidc_expired(),
 	oidc_refused: () => m.error_oidc_refused(),
-	unknown_provider: () => m.error_unknown_provider()
+	unknown_provider: () => m.error_unknown_provider(),
+	name_taken: () => m.error_name_taken(),
+	name_invalid: () => m.error_name_invalid(),
+	move_into_itself: () => m.error_move_into_itself(),
+	other_organization: () => m.error_other_organization(),
+	library_name_taken: () => m.error_library_name_taken(),
+	root: () => m.error_root(),
+	not_found: () => m.error_not_found(),
+	forbidden: () => m.error_forbidden()
 };
 
 /** The message for an API error. */

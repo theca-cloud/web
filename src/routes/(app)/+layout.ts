@@ -3,11 +3,17 @@ import { api, call } from '#lib/api.js';
 import { explain } from '#lib/errors.js';
 
 /**
- * The account, loaded once for every page here: without a session, the login
- * (back here afterwards); an instance not set up yet, its setup.
+ * The account and its libraries, loaded once for every page here (the
+ * libraries again when they change: `invalidate('app:libraries')`). Without a
+ * session, the login (back here afterwards); an instance not set up yet, its
+ * setup.
  */
-export async function load({ fetch, url, untrack }) {
-	const me = await call(api.GET('/api/v1/me', { fetch }));
+export async function load({ fetch, url, untrack, depends }) {
+	depends('app:libraries');
+	const [me, libraries] = await Promise.all([
+		call(api.GET('/api/v1/me', { fetch })),
+		call(api.GET('/api/v1/libraries', { fetch }))
+	]);
 	if (!me.ok) {
 		if (me.error.status === 401) {
 			// Not a dependency: navigating within the app doesn't load the account again.
@@ -19,5 +25,8 @@ export async function load({ fetch, url, untrack }) {
 		}
 		error(me.error.status || 503, explain(me.error));
 	}
-	return { me: me.data };
+	if (!libraries.ok) {
+		error(libraries.error.status || 503, explain(libraries.error));
+	}
+	return { me: me.data, libraries: libraries.data };
 }

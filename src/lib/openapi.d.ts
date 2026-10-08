@@ -328,7 +328,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Log out: revokes this session (at once) and clears the cookie. */
+        /**
+         * Log out: revokes this session at once if it's still valid, and clears the
+         *     cookie in any case. No session needed: an expired or revoked session's
+         *     cookie would otherwise stay, as only the server clears an `httpOnly`
+         *     cookie. A valid session stays protected by the CSRF rule (a `POST`, never
+         *     a `GET` another site could trigger). App passwords can't log out.
+         */
         post: operations["logout"];
         delete?: never;
         options?: never;
@@ -1066,6 +1072,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename and/or move files and folders, each in its own transaction, each
+         *     its own outcome. Within a library a move is one row; to another library of
+         *     the same organization, the subtree (and its history) follows.
+         */
+        patch: operations["update"];
+        trace?: never;
+    };
+    "/api/v1/nodes/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy files and folders into folders of any library of the same
+         *     organization, each in its own transaction, each its own outcome. Files
+         *     keep their current version only, sharing its chunks.
+         */
+        post: operations["copy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/nodes/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take files and folders out of the trash, each in its own transaction,
+         *     each its own outcome: back in their folder, or into the library's root if
+         *     that one is trashed too; renamed if their name is taken.
+         */
+        post: operations["restore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/nodes/trash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Put files and folders in the trash, or (`permanent`, from the trash)
+         *     delete them for good with their subtrees and histories; each in its own
+         *     transaction, each its own outcome.
+         */
+        post: operations["trash_nodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/nodes/{id}": {
         parameters: {
             query?: never;
@@ -1077,19 +1167,10 @@ export interface paths {
         get: operations["info"];
         put?: never;
         post?: never;
-        /**
-         * Put a file or folder in the trash, or (`permanent`, from the trash) delete
-         *     it for good with its subtree and history.
-         */
-        delete: operations["delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Rename and/or move a file or folder. Within a library a move is one row;
-         *     to another library of the same organization, the subtree (and its
-         *     history) follows.
-         */
-        patch: operations["update"];
+        patch?: never;
         trace?: never;
     };
     "/api/v1/nodes/{id}/children": {
@@ -1103,26 +1184,6 @@ export interface paths {
         get: operations["children"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/nodes/{id}/copy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Copy a file or folder into a folder of any library of the same
-         *     organization. Files keep their current version only, sharing its chunks.
-         */
-        post: operations["copy"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1144,26 +1205,6 @@ export interface paths {
          *     folder, in order.
          */
         post: operations["create_folder"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/nodes/{id}/restore": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Take a file or folder out of the trash: back in its folder, or into the
-         *     library's root if that one is trashed too; renamed if its name is taken.
-         */
-        post: operations["restore"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1657,8 +1698,13 @@ export interface components {
              */
             version: string;
         };
-        /** @description `POST /nodes/{id}/copy`. */
+        /** @description A copy. */
         CopyNode: {
+            /**
+             * Format: uuid
+             * @description The file or folder to copy.
+             */
+            id: string;
             /** @description The copy's name (default: the source's). */
             name?: string | null;
             /**
@@ -1672,6 +1718,11 @@ export interface components {
              *     replaced.
              */
             replace?: boolean;
+        };
+        /** @description `POST /nodes/copy`: copies, each in its own transaction (at most 1000). */
+        CopyNodes: {
+            /** @description The copies, each its own outcome. */
+            nodes: components["schemas"]["CopyNode"][];
         };
         /** @description Create an app password (CLI, API clients, WebDAV): data access only. */
         CreateAppPassword: {
@@ -2208,6 +2259,19 @@ export interface components {
              */
             size?: number | null;
         };
+        /**
+         * @description One node's outcome in a batch: the node as it is now (none after a trash),
+         *     or why not.
+         */
+        NodeOutcome: {
+            error?: null | components["schemas"]["ApiError"];
+            node?: null | components["schemas"]["NodeInfo"];
+            /**
+             * Format: int32
+             * @description With `error`: its HTTP status, as a call of its own would have answered.
+             */
+            status?: number | null;
+        };
         /** @description Where to send the browser to continue with an OIDC provider. */
         OidcRedirect: {
             /** @description The provider's authorization URL. */
@@ -2312,6 +2376,24 @@ export interface components {
             email: string;
             /** @description The password (at least 8 characters). */
             password: string;
+        };
+        /**
+         * @description `POST /nodes/restore`: files and folders out of the trash, each in its own
+         *     transaction (at most 1000).
+         */
+        RestoreNodes: {
+            /** @description The trashed files and folders, each its own outcome. */
+            nodes: string[];
+        };
+        /** @description One restore's outcome in a batch. */
+        RestoreOutcome: {
+            error?: null | components["schemas"]["ApiError"];
+            restored?: null | components["schemas"]["Restored"];
+            /**
+             * Format: int32
+             * @description With `error`: its HTTP status, as a call of its own would have answered.
+             */
+            status?: number | null;
         };
         /** @description Where a restored node landed. */
         Restored: {
@@ -2524,6 +2606,17 @@ export interface components {
              */
             size?: number | null;
         };
+        /**
+         * @description `POST /nodes/trash`: files and folders to the trash, or (`permanent`,
+         *     already in the trash) deleted for good; each in its own transaction (at
+         *     most 1000).
+         */
+        TrashNodes: {
+            /** @description The files and folders, each its own outcome. */
+            nodes: string[];
+            /** @description Delete for good (nodes already in the trash only). */
+            permanent?: boolean;
+        };
         /** @description A library in its organization's trash. */
         TrashedLibrary: {
             /**
@@ -2599,8 +2692,13 @@ export interface components {
             /** @description The new name (same rules as file names). */
             name: string;
         };
-        /** @description `PATCH /nodes/{id}`: rename and/or move. */
+        /** @description A rename and/or move. */
         UpdateNode: {
+            /**
+             * Format: uuid
+             * @description The file or folder.
+             */
+            id: string;
             /** @description The new name. */
             name?: string | null;
             /**
@@ -2615,6 +2713,14 @@ export interface components {
              *     never replaced.
              */
             replace?: boolean;
+        };
+        /**
+         * @description `PATCH /nodes`: renames and/or moves, each in its own transaction (at
+         *     most 1000).
+         */
+        UpdateNodes: {
+            /** @description The changes, each its own outcome. */
+            nodes: components["schemas"]["UpdateNode"][];
         };
         /** @description `PATCH /admin/organizations/{id}`: only the fields given change. */
         UpdateOrganization: {
@@ -2708,12 +2814,12 @@ export interface operations {
     };
     accounts: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query?: {
                 /** @description Part of a name or email. */
-                q: string | null;
+                q?: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -2985,12 +3091,12 @@ export interface operations {
     };
     organizations: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query?: {
                 /** @description Part of a name or email. */
-                q: string | null;
+                q?: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -3471,6 +3577,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description `not_a_session` (an app password) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
     providers: {
@@ -3494,14 +3609,15 @@ export interface operations {
     };
     callback: {
         parameters: {
-            query?: never;
+            query?: {
+                code?: string;
+                state?: string;
+                /** @description Set by the provider when the user refused, or on errors. */
+                error?: string;
+            };
             header?: never;
             path: {
                 provider: string;
-                code: string | null;
-                state: string | null;
-                /** @description Set by the provider when the user refused, or on errors. */
-                error: string | null;
             };
             cookie?: never;
         };
@@ -4123,12 +4239,13 @@ export interface operations {
     };
     content: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description A version of the file (default: the current one). */
+                version?: string;
+            };
             header?: never;
             path: {
                 id: string;
-                /** @description A version of the file (default: the current one). */
-                version: string | null;
             };
             cookie?: never;
         };
@@ -4345,12 +4462,13 @@ export interface operations {
     };
     delete_library: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Delete for good (a library already in the trash only). */
+                permanent?: boolean;
+            };
             header?: never;
             path: {
                 id: string;
-                /** @description Delete for good (a library already in the trash only). */
-                permanent: boolean;
             };
             cookie?: never;
         };
@@ -4798,6 +4916,138 @@ export interface operations {
             };
         };
     };
+    update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNodes"];
+            };
+        };
+        responses: {
+            /** @description Each node's outcome, in order: errors `root`, `not_found`, `name_taken`, `move_into_itself`, `other_organization` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeOutcome"][];
+                };
+            };
+            /** @description `batch_too_large` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    copy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyNodes"];
+            };
+        };
+        responses: {
+            /** @description Each copy's outcome, in order (`node`: the copy): errors `not_found`, `name_taken`, `other_organization` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeOutcome"][];
+                };
+            };
+            /** @description `batch_too_large` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreNodes"];
+            };
+        };
+        responses: {
+            /** @description Each node's outcome, in order: errors `not_found` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreOutcome"][];
+                };
+            };
+            /** @description `batch_too_large` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    trash_nodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrashNodes"];
+            };
+        };
+        responses: {
+            /** @description Each node's outcome, in order (no `node`): errors `root`, `not_found` */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeOutcome"][];
+                };
+            };
+            /** @description `batch_too_large` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     info: {
         parameters: {
             query?: never;
@@ -4827,95 +5077,6 @@ export interface operations {
             };
         };
     };
-    delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-                /** @description Delete for good (a node already in the trash only). */
-                permanent: boolean;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description `root` */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateNode"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeInfo"];
-                };
-            };
-            /** @description `root` */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description `name_taken`, `move_into_itself`, `other_organization` */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
     children: {
         parameters: {
             query?: never;
@@ -4936,48 +5097,6 @@ export interface operations {
                 };
             };
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    copy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CopyNode"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeInfo"];
-                };
-            };
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description `name_taken`, `other_organization` */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5029,35 +5148,6 @@ export interface operations {
             };
             /** @description `name_taken` (a file has a path's name) */
             409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    restore: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Restored"];
-                };
-            };
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5678,14 +5768,14 @@ export interface operations {
     };
     search: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
+            query: {
                 /** @description Part of a name (at least 3 characters). */
                 q: string;
                 /** @description Only this library. */
-                library: string | null;
+                library?: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;

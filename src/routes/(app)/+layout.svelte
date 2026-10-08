@@ -1,40 +1,41 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { Button } from '#lib/components/ui/button/index.js';
-	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
-	import { api, call } from '#lib/api.js';
-	import { explain } from '#lib/errors.js';
+	import { page } from '$app/state';
+	import AppSidebar from '#lib/components/app-sidebar.svelte';
+	import * as Breadcrumb from '#lib/components/ui/breadcrumb/index.js';
+	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
+	import { Toaster } from '#lib/components/ui/sonner/index.js';
+	import type { Crumb } from '#lib/crumbs.js';
 	import { m } from '#lib/paraglide/messages.js';
 
 	let { data, children } = $props();
-	let error = $state<string>();
 
-	async function logout() {
-		const result = await call(api.POST('/api/v1/auth/logout'));
-		// A session already gone (401): logged out all the same.
-		if (result.ok || result.error.status === 401) {
-			await goto('/login', { invalidateAll: true });
-		} else {
-			error = explain(result.error);
-		}
-	}
+	// Each page's own, from its `load`.
+	const crumbs = $derived((page.data.crumbs ?? []) as Crumb[]);
 </script>
 
-<header class="flex items-center justify-between border-b px-4 py-2">
-	<a href="/" class="font-semibold">{m.app_name()}</a>
-	{#if error}
-		<p role="alert" class="text-sm text-destructive">{error}</p>
-	{/if}
-	<DropdownMenu.Root>
-		<DropdownMenu.Trigger>
-			{#snippet child({ props })}
-				<Button {...props} variant="ghost" aria-label={m.account_menu()}>{data.me.email}</Button>
-			{/snippet}
-		</DropdownMenu.Trigger>
-		<DropdownMenu.Content align="end">
-			<DropdownMenu.Item onSelect={logout}>{m.logout()}</DropdownMenu.Item>
-		</DropdownMenu.Content>
-	</DropdownMenu.Root>
-</header>
-
-{@render children()}
+<Sidebar.Provider>
+	<AppSidebar me={data.me} libraries={data.libraries} />
+	<Sidebar.Inset>
+		<div class="flex h-12 items-center gap-2 border-b px-4">
+			<Sidebar.Trigger aria-label={m.open_sidebar()} class="-ml-1" />
+			<Breadcrumb.Root>
+				<Breadcrumb.List>
+					{#each crumbs as crumb, i (i)}
+						{#if i > 0}
+							<Breadcrumb.Separator />
+						{/if}
+						<Breadcrumb.Item>
+							{#if crumb.href && i < crumbs.length - 1}
+								<Breadcrumb.Link href={crumb.href}>{crumb.label}</Breadcrumb.Link>
+							{:else}
+								<Breadcrumb.Page>{crumb.label}</Breadcrumb.Page>
+							{/if}
+						</Breadcrumb.Item>
+					{/each}
+				</Breadcrumb.List>
+			</Breadcrumb.Root>
+		</div>
+		{@render children()}
+	</Sidebar.Inset>
+</Sidebar.Provider>
+<Toaster />
