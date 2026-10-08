@@ -1,6 +1,15 @@
 # Changelog
 
 Every release of the web app: the `web` image holding its build, assembled with `core` by `ce`.
+## [0.2.0] - 2026-10-08
+
+### Features
+
+- The setup says more storages are added later; core 0.17.0
+
+### Build and CI
+
+- Generate the server's keys, core only reads them from 0.17.0
 ## [0.1.0] - 2026-10-08
 
 ### Features
