@@ -11,7 +11,8 @@
 
 	async function logout() {
 		const result = await call(api.POST('/api/v1/auth/logout'));
-		if (result.ok) {
+		// A session already gone (401): logged out all the same.
+		if (result.ok || result.error.status === 401) {
 			await goto('/login', { invalidateAll: true });
 		} else {
 			error = explain(result.error);

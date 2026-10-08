@@ -30,6 +30,10 @@ test('an expired session leads to the login, then back', async ({ page, context 
 	await logIn(page, admin.email, admin.password);
 	await expect(page.getByRole('button', { name: en.account_menu })).toBeVisible();
 	await context.clearCookies();
+	// Logging out of a session already gone: to the login all the same.
+	await page.getByRole('button', { name: en.account_menu }).click();
+	await page.getByRole('menuitem', { name: en.logout }).click();
+	await expect(page).toHaveURL('/login');
 	await page.goto('/?again');
 	await expect(page).toHaveURL('/login?next=%2F%3Fagain');
 });
