@@ -1705,6 +1705,13 @@ export interface components {
             library: string;
             /** @description Description of the version. */
             message?: string | null;
+            /**
+             * Format: date-time
+             * @description The file's modification time on the client (its own, e.g. on disk);
+             *     none: the upload's. The same chunks as the current version with
+             *     another time update that version's (a touch), creating nothing.
+             */
+            modified?: string | null;
             /** @description The name of a new file. */
             name?: string | null;
             /**
@@ -2271,7 +2278,7 @@ export interface components {
             is_file: boolean;
             /**
              * Format: date-time
-             * @description A file's current version date.
+             * @description A file's modification time (its current version's, as its client gave it).
              */
             modified?: string | null;
             /** @description Its name. */
@@ -2307,6 +2314,12 @@ export interface components {
              * @description Its library.
              */
             library: string;
+            /**
+             * Format: date-time
+             * @description A file's modification time (its current version's, as its client gave
+             *     it); none for a folder or a file without a version yet.
+             */
+            modified?: string | null;
             /** @description Its name (empty for the root). */
             name: string;
             /**
@@ -2738,7 +2751,7 @@ export interface components {
             is_file: boolean;
             /**
              * Format: date-time
-             * @description A file's current version date.
+             * @description A file's modification time (its current version's, as its client gave it).
              */
             modified?: string | null;
             /** @description Its path below the listed folder (`a`, `a/b.txt`). */
@@ -2817,7 +2830,7 @@ export interface components {
             author?: string | null;
             /**
              * Format: date-time
-             * @description When.
+             * @description When it was committed.
              */
             created_at: string;
             /** @description The file's current version. */
@@ -2829,6 +2842,12 @@ export interface components {
             id: string;
             /** @description Its description. */
             message?: string | null;
+            /**
+             * Format: date-time
+             * @description The file's modification time at this version, as its client gave it
+             *     (the commit's time when none was given).
+             */
+            modified: string;
             /**
              * @description Its number in the tree, RCS-style: `1`, `2`, `3` along a line; a
              *     version's oldest child continues its line, later ones start branches
