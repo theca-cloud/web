@@ -1,6 +1,11 @@
 # Changelog
 
 Every release of the web app: the `web` image holding its build, assembled with `core` by `ce`.
+## [0.2.1] - 2026-10-08
+
+### Fixes
+
+- Core 0.17.1
 ## [0.2.0] - 2026-10-08
 
 ### Features
