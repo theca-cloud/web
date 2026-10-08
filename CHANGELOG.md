@@ -1,6 +1,11 @@
 # Changelog
 
 Every release of the web app: the `web` image holding its build, assembled with `core` by `ce`.
+## [0.3.1] - 2026-10-08
+
+### Fixes
+
+- A file's page shows its modification time, not its upload's
 ## [0.3.0] - 2026-10-08
 
 ### Features
