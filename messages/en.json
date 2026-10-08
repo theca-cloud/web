@@ -163,5 +163,10 @@
 	"error_storage": "The storage refused it: try again later.",
 	"error_source_changed": "The file changed while it was being uploaded: upload it again.",
 	"error_io": "The file couldn't be read.",
-	"error_unexpected_answer": "The server answered something unexpected."
+	"error_unexpected_answer": "The server answered something unexpected.",
+	"error_page_not_found": "This page doesn't exist, or you can't reach it.",
+	"error_page_forbidden": "You can't open this.",
+	"error_page_unavailable": "The server can't be reached, or isn't ready. Try again in a moment.",
+	"error_page_title": "Error {status}",
+	"back_home": "Back to your files"
 }

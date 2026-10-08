@@ -167,8 +167,14 @@ test('a read-only member sees no write action', async ({ page }) => {
 	}
 });
 
-test('a malformed ID in the URL is a 404', async ({ page }) => {
+test('a 404 stays in the frame, with a way back', async ({ page }) => {
 	await logIn(page, admin.email, admin.password);
-	await page.goto('/not-an-id');
-	await expect(page.getByText('404')).toBeVisible();
+	const organization = await adminOrganization();
+	for (const path of ['/not-an-id', `/${organization}/01a1181b-0000-7000-8000-000000000000`]) {
+		await page.goto(path);
+		await expect(page.getByText(en.error_page_not_found)).toBeVisible();
+		await expect(page.getByRole('button', { name: en.account_menu })).toBeVisible();
+	}
+	await page.getByRole('link', { name: en.back_home }).click();
+	await expect(page).toHaveURL(`/${organization}`);
 });
