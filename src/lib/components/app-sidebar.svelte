@@ -11,15 +11,17 @@
 	import LibraryIcon from '@lucide/svelte/icons/library-big';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import SearchIcon from '@lucide/svelte/icons/search';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
+	import ConfirmDialog from '#lib/components/confirm-dialog.svelte';
 	import NameDialog from '#lib/components/name-dialog.svelte';
-	import { Button } from '#lib/components/ui/button/index.js';
-	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
 	import { api, call } from '#lib/api.js';
 	import { explain } from '#lib/errors.js';
 	import type { components } from '#lib/openapi.js';
 	import { m } from '#lib/paraglide/messages.js';
+	import { scopeHere, scopeQuery } from '#lib/scope.js';
 
 	type Library = components['schemas']['Library'];
 	type Me = components['schemas']['Me'];
@@ -37,10 +39,17 @@
 	let renaming: NameDialog;
 	let createIn = $state('');
 	let renamed = $state<Library>();
-	// A library holds everything in it: trashing one is confirmed first (as the
-	// CLI's `rm` does), files and folders aren't (an undo suffices).
-	let trashed = $state<Library>();
-	let confirming = $state(false);
+	let confirm: ConfirmDialog;
+
+	// Search and trash follow where the user is (decisions.md).
+	const here = $derived(new URLSearchParams(scopeQuery(scopeHere(page.data))));
+	let query = $state('');
+
+	function search(event: SubmitEvent) {
+		event.preventDefault();
+		const q = new URLSearchParams({ q: query.trim() });
+		goto(`/search?${q}&${here}`);
+	}
 
 	async function create(name: string) {
 		const body = { organization: createIn, name };
@@ -58,9 +67,15 @@
 		await invalidate('app:libraries');
 	}
 
-	async function trash() {
-		confirming = false;
-		const library = trashed!;
+	// A library holds everything in it: trashing one is confirmed first (as the
+	// CLI's `rm` does); files and folders aren't (an undo suffices).
+	async function trash(library: Library) {
+		const confirmed = await confirm.ask({
+			title: m.trash_library_title(),
+			text: m.trash_library_text({ name: library.name }),
+			action: m.delete()
+		});
+		if (!confirmed) return;
 		const params = { path: { id: library.id } };
 		const result = await call(api.DELETE('/api/v1/libraries/{id}', { params }));
 		if (!result.ok) {
@@ -99,6 +114,17 @@
 </script>
 
 <Sidebar.Root>
+	<Sidebar.Header>
+		<form role="search" onsubmit={search}>
+			<label class="relative block">
+				<span class="sr-only">{m.search()}</span>
+				<SearchIcon
+					class="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground"
+				/>
+				<Sidebar.Input class="pl-8" placeholder={m.search_placeholder()} bind:value={query} />
+			</label>
+		</form>
+	</Sidebar.Header>
 	<Sidebar.Content>
 		{#each organizations as organization (organization.organization)}
 			{@const name = organization.personal ? m.my_files() : organization.name}
@@ -148,12 +174,7 @@
 											>
 												{m.rename()}
 											</DropdownMenu.Item>
-											<DropdownMenu.Item
-												onSelect={() => {
-													trashed = library;
-													confirming = true;
-												}}
-											>
+											<DropdownMenu.Item onSelect={() => trash(library)}>
 												{m.delete()}
 											</DropdownMenu.Item>
 										</DropdownMenu.Content>
@@ -168,6 +189,16 @@
 	</Sidebar.Content>
 	<Sidebar.Footer>
 		<Sidebar.Menu>
+			<Sidebar.MenuItem>
+				<Sidebar.MenuButton isActive={page.url.pathname === '/trash'}>
+					{#snippet child({ props })}
+						<a href="/trash?{here}" {...props}>
+							<Trash2Icon />
+							<span>{m.trash()}</span>
+						</a>
+					{/snippet}
+				</Sidebar.MenuButton>
+			</Sidebar.MenuItem>
 			<Sidebar.MenuItem>
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
@@ -197,19 +228,4 @@
 <NameDialog bind:this={creating} title={m.new_library()} action={m.create()} submit={create} />
 <NameDialog bind:this={renaming} title={m.rename()} action={m.rename()} submit={rename} />
 
-<Dialog.Root bind:open={confirming}>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>{m.trash_library_title()}</Dialog.Title>
-			<Dialog.Description>{m.trash_library_text({ name: trashed?.name ?? '' })}</Dialog.Description>
-		</Dialog.Header>
-		<Dialog.Footer>
-			<Dialog.Close>
-				{#snippet child({ props })}
-					<Button {...props} variant="outline">{m.cancel()}</Button>
-				{/snippet}
-			</Dialog.Close>
-			<Button variant="destructive" onclick={trash}>{m.delete()}</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
+<ConfirmDialog bind:this={confirm} />

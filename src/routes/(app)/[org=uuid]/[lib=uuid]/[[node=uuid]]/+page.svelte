@@ -1,11 +1,6 @@
 <script lang="ts">
-	import DownloadIcon from '@lucide/svelte/icons/download';
-	import FileIcon from '@lucide/svelte/icons/file';
-	import { Button } from '#lib/components/ui/button/index.js';
-	import { download } from '#lib/download.js';
+	import FileView from '#lib/components/file-view.svelte';
 	import FolderView from '#lib/components/folder-view.svelte';
-	import { formatSize } from '#lib/format.js';
-	import { m } from '#lib/paraglide/messages.js';
 
 	let { data } = $props();
 
@@ -16,22 +11,9 @@
 </script>
 
 {#if data.node.is_file}
-	<div class="grid gap-2 p-6">
-		<h1 class="flex items-center gap-2 text-lg font-medium">
-			<FileIcon class="size-5 text-muted-foreground" />
-			{data.node.name}
-		</h1>
-		{#if data.node.size != null}
-			<p class="text-sm text-muted-foreground">{formatSize(data.node.size)}</p>
-		{/if}
-		<div>
-			<Button onclick={() => download(data.node)}>
-				<DownloadIcon />
-				{m.download()}
-			</Button>
-		</div>
-		<p class="text-sm text-muted-foreground">{m.file_page_soon()}</p>
-	</div>
+	{#key data.node.id}
+		<FileView library={data.library} file={data.node} versions={data.versions} {destinations} />
+	{/key}
 {:else}
 	<FolderView library={data.library} folder={data.node} children={data.children} {destinations} />
 {/if}

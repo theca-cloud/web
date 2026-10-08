@@ -42,7 +42,9 @@ const byCode: Record<string, (error: ApiError) => string> = {
 	source_changed: () => m.error_source_changed(),
 	io: () => m.error_io(),
 	unexpected_answer: () => m.error_unexpected_answer(),
-	unsupported_server: () => m.error_unsupported_server()
+	unsupported_server: () => m.error_unsupported_server(),
+	query_too_short: () => m.error_query_too_short(),
+	invalid_scope: () => m.error_invalid_scope()
 };
 
 /** The message for an API error. */

@@ -26,7 +26,10 @@ export async function load({ params, parent, fetch, depends }) {
 		error(404, m.error_not_found());
 	}
 	let children: Awaited<ReturnType<typeof listing>> = [];
-	if (!node.data.is_file) {
+	let versions: Awaited<ReturnType<typeof history>> = [];
+	if (node.data.is_file) {
+		versions = await history(fetch, id);
+	} else {
 		children = await listing(fetch, id);
 	}
 
@@ -40,7 +43,7 @@ export async function load({ params, parent, fetch, depends }) {
 			.map((a) => ({ label: a.name, href: `${base}/${a.id}` })),
 		...(node.data.parent ? [{ label: node.data.name }] : [])
 	];
-	return { library, node: node.data, children, crumbs };
+	return { library, node: node.data, children, versions, crumbs };
 }
 
 async function listing(fetch: typeof globalThis.fetch, id: string) {
@@ -51,4 +54,15 @@ async function listing(fetch: typeof globalThis.fetch, id: string) {
 		error(children.error.status || 503, explain(children.error));
 	}
 	return children.data;
+}
+
+/** A file's versions, newest first. */
+async function history(fetch: typeof globalThis.fetch, id: string) {
+	const versions = await call(
+		api.GET('/api/v1/files/{id}/versions', { fetch, params: { path: { id } } })
+	);
+	if (!versions.ok) {
+		error(versions.error.status || 503, explain(versions.error));
+	}
+	return versions.data.toSorted((a, b) => b.created_at.localeCompare(a.created_at));
 }

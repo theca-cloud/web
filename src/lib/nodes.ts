@@ -40,9 +40,9 @@ export function copy(nodes: Copy[]) {
 	return call(api.POST('/api/v1/nodes/copy', { body: { nodes } }));
 }
 
-/** To the trash. */
-export function trash(nodes: string[]) {
-	return call(api.POST('/api/v1/nodes/trash', { body: { nodes, permanent: false } }));
+/** To the trash, or (`permanent`, from the trash) gone for good. */
+export function trash(nodes: string[], permanent = false) {
+	return call(api.POST('/api/v1/nodes/trash', { body: { nodes, permanent } }));
 }
 
 /** Out of the trash. */

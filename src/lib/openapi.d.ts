@@ -5773,6 +5773,10 @@ export interface operations {
                 q: string;
                 /** @description Only this library. */
                 library?: string;
+                /** @description Only this organization's libraries. */
+                organization?: string;
+                /** @description Only below this folder. */
+                folder?: string;
             };
             header?: never;
             path?: never;
