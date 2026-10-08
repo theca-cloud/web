@@ -1,7 +1,7 @@
 {
 	"name": "theca-web",
 	"private": true,
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
@@ -55,7 +55,7 @@
 	},
 	"license": "AGPL-3.0-only",
 	"dependencies": {
-		"@theca/client": "0.16.0",
+		"@theca/client": "0.17.0",
 		"openapi-fetch": "^0.17.0",
 		"uqr": "^0.1.3"
 	}

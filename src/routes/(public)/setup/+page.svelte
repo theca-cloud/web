@@ -71,6 +71,7 @@
 			<fieldset class="grid gap-4">
 				<legend class="mb-2 font-medium">{m.setup_storage()}</legend>
 				<StorageFields bind:this={storage} />
+				<p class="text-sm text-muted-foreground">{m.setup_storage_more()}</p>
 			</fieldset>
 			{#if error}
 				<Alert.Root variant="destructive">

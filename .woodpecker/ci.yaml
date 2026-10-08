@@ -60,7 +60,8 @@ steps:
       - scripts/ci.sh build
 
   # The server's files, in the workspace: its image has no shell to write
-  # them, and services can't mount files. Empty keys: the server generates them.
+  # them, and services can't mount files. The keys generated: the server only
+  # reads them (core 0.17.0).
   - name: server-files
     image: node:24
     depends_on: []
@@ -68,10 +69,10 @@ steps:
       - mkdir -p data/secrets data/files data/files-fresh
       - printf postgres://theca:theca@postgres:5432/theca >data/secrets/database_url
       - printf postgres://theca:theca@postgres:5432/theca_fresh >data/secrets/database_url_fresh
-      - ": >data/secrets/server.key"
-      - ": >data/secrets/data.key"
-      - ": >data/secrets/server_fresh.key"
-      - ": >data/secrets/data_fresh.key"
+      - head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' >data/secrets/server.key
+      - head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' >data/secrets/data.key
+      - head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' >data/secrets/server_fresh.key
+      - head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' >data/secrets/data_fresh.key
       - chmod -R a+rwX data
 
   # The server the tests run against: core's latest release candidate, in the

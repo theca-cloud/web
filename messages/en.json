@@ -42,6 +42,7 @@
 	"setup_organization": "Organization",
 	"setup_organization_hint": "Its name, as people will see it.",
 	"setup_storage": "Storage",
+	"setup_storage_more": "More storages can be added later, from the administration's Storages page.",
 	"setup_storage_name": "Name",
 	"setup_filesystem": "A folder on the server",
 	"setup_s3": "An S3 bucket",
