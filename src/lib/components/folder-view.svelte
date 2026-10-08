@@ -11,20 +11,25 @@
 	import FileIcon from '@lucide/svelte/icons/file';
 	import FolderIcon from '@lucide/svelte/icons/folder';
 	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
+	import FolderUpIcon from '@lucide/svelte/icons/folder-up';
+	import UploadIcon from '@lucide/svelte/icons/upload';
 	import DestinationDialog from '#lib/components/destination-dialog.svelte';
 	import NameDialog from '#lib/components/name-dialog.svelte';
-	import { Button } from '#lib/components/ui/button/index.js';
+	import { Button, buttonVariants } from '#lib/components/ui/button/index.js';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import * as DropdownMenu from '#lib/components/ui/dropdown-menu/index.js';
 	import * as Table from '#lib/components/ui/table/index.js';
 	import { api, call } from '#lib/api.js';
+	import { download } from '#lib/download.js';
+	import { dropped } from '#lib/drop.js';
 	import { explain } from '#lib/errors.js';
 	import { formatDate, formatSize } from '#lib/format.js';
 	import * as nodes from '#lib/nodes.js';
 	import type { Node, Split } from '#lib/nodes.js';
 	import type { components } from '#lib/openapi.js';
 	import { m } from '#lib/paraglide/messages.js';
+	import { transfers } from '#lib/transfers.svelte.js';
 
 	type Library = components['schemas']['Library'];
 	type NodeInfo = components['schemas']['NodeInfo'];
@@ -96,6 +101,40 @@
 	function reply(replace: boolean) {
 		replaceOpen = false;
 		answer(replace);
+	}
+
+	// Uploads into this folder: picked files, a picked folder, or a drop.
+	let dragging = $state(false);
+
+	function upload(entries: { path: string; file: File }[], folders: string[] = []) {
+		if (entries.length > 0 || folders.length > 0) {
+			transfers.upload(entries, folders, library.id, folder.id);
+		}
+	}
+
+	function picked(input: HTMLInputElement) {
+		// A picked folder's files come with their path from it (`folder/a.txt`).
+		const files = [...(input.files ?? [])];
+		upload(files.map((file) => ({ path: file.webkitRelativePath || file.name, file })));
+		input.value = '';
+	}
+
+	function ondragover(event: DragEvent) {
+		if (!library.writable || !event.dataTransfer?.types.includes('Files')) return;
+		event.preventDefault();
+		dragging = true;
+	}
+
+	async function ondrop(event: DragEvent) {
+		if (!library.writable || !event.dataTransfer) return;
+		event.preventDefault();
+		dragging = false;
+		const result = await dropped(event.dataTransfer);
+		if (result.ok) {
+			upload(result.data.entries, result.data.folders);
+		} else {
+			toast.error(m.error_unknown({ message: result.error }));
+		}
 	}
 
 	async function refresh() {
@@ -205,7 +244,17 @@
 	</button>
 {/snippet}
 
-<div class="flex flex-col gap-3 p-4">
+<div
+	class={[
+		'flex flex-1 flex-col gap-3 p-4',
+		dragging && 'bg-accent outline-2 -outline-offset-4 outline-primary outline-dashed'
+	]}
+	role="region"
+	aria-label={m.drop_here()}
+	{ondragover}
+	ondragleave={() => (dragging = false)}
+	{ondrop}
+>
 	<div class="flex min-h-8 flex-wrap items-center gap-2">
 		{#if chosen.length > 0}
 			<span class="mr-2 text-sm">{m.selected({ count: chosen.length })}</span>
@@ -221,7 +270,28 @@
 				<Button variant="outline" size="sm" onclick={() => remove(chosen)}>{m.delete()}</Button>
 			{/if}
 		{:else if library.writable}
-			<Button size="sm" onclick={() => newFolder.show()}>
+			<!-- Labels opening their file input: native, keyboard included (the input stays focusable). -->
+			<label class={[buttonVariants({ size: 'sm' }), 'cursor-pointer focus-within:ring-3']}>
+				<UploadIcon />
+				{m.upload()}
+				<input type="file" multiple class="sr-only" onchange={(e) => picked(e.currentTarget)} />
+			</label>
+			<label
+				class={[
+					buttonVariants({ variant: 'outline', size: 'sm' }),
+					'cursor-pointer focus-within:ring-3'
+				]}
+			>
+				<FolderUpIcon />
+				{m.upload_folder()}
+				<input
+					type="file"
+					webkitdirectory
+					class="sr-only"
+					onchange={(e) => picked(e.currentTarget)}
+				/>
+			</label>
+			<Button variant="outline" size="sm" onclick={() => newFolder.show()}>
 				<FolderPlusIcon />
 				{m.new_folder()}
 			</Button>
@@ -299,6 +369,11 @@
 									{/snippet}
 								</DropdownMenu.Trigger>
 								<DropdownMenu.Content align="end">
+									{#if node.is_file}
+										<DropdownMenu.Item onSelect={() => download(node)}
+											>{m.download()}</DropdownMenu.Item
+										>
+									{/if}
 									{#if library.writable}
 										<DropdownMenu.Item
 											onSelect={() => {

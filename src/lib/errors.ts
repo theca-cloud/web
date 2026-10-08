@@ -32,12 +32,22 @@ const byCode: Record<string, (error: ApiError) => string> = {
 	library_name_taken: () => m.error_library_name_taken(),
 	root: () => m.error_root(),
 	not_found: () => m.error_not_found(),
-	forbidden: () => m.error_forbidden()
+	forbidden: () => m.error_forbidden(),
+	cancelled: () => m.error_cancelled(),
+	invalid_name: () => m.error_invalid_name(),
+	folder_exists: () => m.error_folder_exists(),
+	quota_exceeded: () => m.error_quota_exceeded(),
+	corrupted: () => m.error_corrupted(),
+	storage: () => m.error_storage(),
+	source_changed: () => m.error_source_changed(),
+	io: () => m.error_io(),
+	unexpected_answer: () => m.error_unexpected_answer(),
+	unsupported_server: () => m.error_unsupported_server()
 };
 
 /** The message for an API error. */
-export function explain(error: ApiError): string {
-	return byCode[error.code]?.(error) ?? m.error_unknown({ message: error.message });
+export function explain(error: Pick<ApiError, 'code' | 'message'> & Partial<ApiError>): string {
+	return byCode[error.code]?.(error as ApiError) ?? m.error_unknown({ message: error.message });
 }
 
 /** The message for a bare code (an OIDC login's `?error=`). */

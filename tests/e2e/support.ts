@@ -145,3 +145,12 @@ export async function dropLibrary(library: Library) {
 	await asAdmin('DELETE', `/api/v1/libraries/${library.id}`).catch(() => {});
 	await asAdmin('DELETE', `/api/v1/libraries/${library.id}?permanent=true`).catch(() => {});
 }
+
+/** Bytes that don't compress or dedup with anything else (each test its own seed). */
+export function randomBytes(size: number): Buffer {
+	const bytes = Buffer.alloc(size);
+	for (let i = 0; i < size; i += 65536) {
+		crypto.getRandomValues(bytes.subarray(i, Math.min(i + 65536, size)));
+	}
+	return bytes;
+}

@@ -3,6 +3,7 @@
 	import AppSidebar from '#lib/components/app-sidebar.svelte';
 	import * as Breadcrumb from '#lib/components/ui/breadcrumb/index.js';
 	import * as Sidebar from '#lib/components/ui/sidebar/index.js';
+	import TransferPanel from '#lib/components/transfer-panel.svelte';
 	import { Toaster } from '#lib/components/ui/sonner/index.js';
 	import type { Crumb } from '#lib/crumbs.js';
 	import { m } from '#lib/paraglide/messages.js';
@@ -38,4 +39,5 @@
 		{@render children()}
 	</Sidebar.Inset>
 </Sidebar.Provider>
+<TransferPanel />
 <Toaster />

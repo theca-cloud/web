@@ -29,7 +29,7 @@ export async function load({ fetch }) {
 	return {
 		app: pkg.version,
 		server: server?.server ?? '?',
-		engine: ready.ok ? m.status_ready() : m.status_failed({ error: ready.error }),
+		engine: ready.ok ? m.status_ready() : m.status_failed({ error: ready.error.message }),
 		serviceWorker: worker,
 		crumbs: [{ label: m.about_title() }]
 	};

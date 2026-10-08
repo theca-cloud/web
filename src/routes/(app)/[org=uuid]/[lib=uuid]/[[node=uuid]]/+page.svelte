@@ -1,5 +1,8 @@
 <script lang="ts">
+	import DownloadIcon from '@lucide/svelte/icons/download';
 	import FileIcon from '@lucide/svelte/icons/file';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import { download } from '#lib/download.js';
 	import FolderView from '#lib/components/folder-view.svelte';
 	import { formatSize } from '#lib/format.js';
 	import { m } from '#lib/paraglide/messages.js';
@@ -21,6 +24,12 @@
 		{#if data.node.size != null}
 			<p class="text-sm text-muted-foreground">{formatSize(data.node.size)}</p>
 		{/if}
+		<div>
+			<Button onclick={() => download(data.node)}>
+				<DownloadIcon />
+				{m.download()}
+			</Button>
+		</div>
 		<p class="text-sm text-muted-foreground">{m.file_page_soon()}</p>
 	</div>
 {:else}
