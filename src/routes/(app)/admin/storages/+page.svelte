@@ -88,5 +88,9 @@
 	action={m.storage_add()}
 	submit={add}
 >
-	<StorageFields bind:this={fields} name="" />
+	<StorageFields
+		bind:this={fields}
+		name=""
+		test={(body) => call(api.POST('/api/v1/admin/storages/test', { body }))}
+	/>
 </FormDialog>

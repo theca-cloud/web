@@ -1,13 +1,26 @@
 <script lang="ts">
 	// A storage's fields (the setup wizard's, the admin's new storage): its
 	// name, then a filesystem path or an S3 bucket with its key files.
-	// `value()` gives the API's `NewStorage`.
+	// `value()` gives the API's `NewStorage`. `test`: its connection test, on
+	// the fields as typed (the page knows which endpoint).
+	import ConnectionTest from '#lib/components/connection-test.svelte';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
+	import type { ApiError } from '#lib/api.js';
 	import type { components } from '#lib/openapi.js';
 	import { m } from '#lib/paraglide/messages.js';
+	import type { Result } from '#lib/result.js';
 
-	let { name = 'main' }: { name?: string } = $props();
+	type Backend = components['schemas']['StorageBackend'];
+	type Outcome = components['schemas']['ConnectionTest'];
+
+	let {
+		name = 'main',
+		test
+	}: {
+		name?: string;
+		test?: (backend: Backend) => Promise<Result<Outcome, ApiError>>;
+	} = $props();
 
 	// Unique per form: the admin's dialog and a page may both hold one.
 	const id = $props.id();
@@ -22,11 +35,11 @@
 	let secretKeyFile = $state('');
 	let pathStyle = $state(true);
 
-	export function value(): components['schemas']['NewStorage'] {
+	/** The storage itself, without its name (what a test takes). */
+	function backend(): Backend {
 		return kind === 'filesystem'
-			? { name: storageName, implementation: 'filesystem', path }
+			? { implementation: 'filesystem', path }
 			: {
-					name: storageName,
 					implementation: 's3',
 					host,
 					region,
@@ -35,6 +48,10 @@
 					secret_key_file: secretKeyFile,
 					path_style: pathStyle
 				};
+	}
+
+	export function value(): components['schemas']['NewStorage'] {
+		return { name: storageName, ...backend() };
 	}
 </script>
 
@@ -90,4 +107,7 @@
 		<input type="checkbox" bind:checked={pathStyle} />
 		{m.setup_path_style()}
 	</label>
+{/if}
+{#if test}
+	<ConnectionTest run={() => test(backend())} />
 {/if}

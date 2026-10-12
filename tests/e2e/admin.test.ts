@@ -137,6 +137,16 @@ test('settings, storages and jobs', async ({ page }) => {
 	await pending.fill('');
 	await save();
 
+	// The Email dialog's tests, on the dev server's Mailpit: a helper, nothing saved.
+	await card(en.settings_smtp).click();
+	await dialog.getByRole('button', { name: en.connection_test }).click();
+	await expect(
+		dialog.getByRole('status').filter({ hasText: new RegExp(`^${en.connection_ok.split('{')[0]}`) })
+	).toBeVisible();
+	await dialog.getByRole('button', { name: en.smtp_send_test }).click();
+	await expect(dialog.getByRole('status').filter({ hasText: /sent to/ })).toBeVisible();
+	await dialog.getByRole('button', { name: en.cancel }).click();
+
 	// A duration: shown in its unit; cancelled, nothing sent.
 	const trash = en.setting_name_trash_retention_secs;
 	await card(storageCard).click();
@@ -152,6 +162,10 @@ test('settings, storages and jobs', async ({ page }) => {
 	await page.getByRole('button', { name: en.storage_add }).click();
 	await dialog.getByLabel(en.setup_storage_name).fill(storage);
 	await dialog.getByLabel(en.setup_path).fill(`${storageRoot}/${storage}`);
+	await dialog.getByRole('button', { name: en.connection_test }).click();
+	await expect(
+		dialog.getByRole('status').filter({ hasText: new RegExp(`^${en.connection_ok.split('{')[0]}`) })
+	).toBeVisible();
 	await dialog.getByRole('button', { name: en.storage_add }).click();
 	await expect(row(page, storage)).toBeVisible();
 	await expect(

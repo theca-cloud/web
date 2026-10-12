@@ -5,6 +5,7 @@
 	// group, one Save for the group's changes, all or none.
 	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import ConnectionTest from '#lib/components/connection-test.svelte';
 	import FormDialog from '#lib/components/form-dialog.svelte';
 	import SettingField from '#lib/components/setting-field.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -101,6 +102,14 @@
 	}
 
 	const open = $derived(groups.find(([g]) => g === editing));
+
+	// The Email dialog's tests: its SMTP values as typed (unsaved), over the saved ones.
+	const smtpEdits = () =>
+		Object.fromEntries(
+			Object.entries(edits)
+				.filter(([key]) => key.startsWith('smtp_'))
+				.map(([key, value]) => [key, value || null])
+		);
 </script>
 
 <div class="grid max-w-5xl gap-4 sm:grid-cols-2">
@@ -146,4 +155,15 @@
 			/>
 		{/each}
 	</div>
+	{#if editing === 'smtp'}
+		<div class="flex flex-wrap gap-x-4 gap-y-2">
+			<ConnectionTest
+				run={() => call(api.POST('/api/v1/admin/smtp/test', { body: smtpEdits() }))}
+			/>
+			<ConnectionTest
+				label={m.smtp_send_test()}
+				run={() => call(api.POST('/api/v1/admin/smtp/send-test', { body: smtpEdits() }))}
+			/>
+		</div>
+	{/if}
 </FormDialog>

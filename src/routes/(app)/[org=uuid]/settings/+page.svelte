@@ -130,6 +130,13 @@
 						params: { path: { id, provider } }
 					})
 				)}
+			test={(issuer) =>
+				call(
+					api.POST('/api/v1/organizations/{id}/identity-providers/test', {
+						params: { path: { id } },
+						body: { issuer }
+					})
+				)}
 		/>
 	</section>
 

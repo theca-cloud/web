@@ -121,6 +121,11 @@ test('setting up a fresh instance', async ({ page }) => {
 	await page.getByLabel(en.password).fill('violet tractor on the moon');
 	await page.getByLabel(en.setup_organization_hint).fill('Fresh');
 	await page.getByLabel(en.setup_path).fill(freshStorage);
+	// The storage tested before submitting (the setup's token, none here: open).
+	await page.getByRole('button', { name: en.connection_test }).click();
+	await expect(
+		page.getByRole('status').filter({ hasText: new RegExp(`^${en.connection_ok.split('{')[0]}`) })
+	).toBeVisible();
 	await page.getByRole('button', { name: en.setup_submit }).click();
 	await expect(page).toHaveURL(new RegExp(`^${fresh}/[0-9a-f-]{36}$`));
 	await expect(page.getByRole('button', { name: en.account_menu })).toHaveText(email);

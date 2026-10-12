@@ -8,6 +8,7 @@
 	import { invalidate } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import ConfirmDialog from '#lib/components/confirm-dialog.svelte';
+	import ConnectionTest from '#lib/components/connection-test.svelte';
 	import FormDialog from '#lib/components/form-dialog.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Checkbox } from '#lib/components/ui/checkbox/index.js';
@@ -22,12 +23,14 @@
 	type Provider = components['schemas']['ProviderInfo'];
 	type Request = components['schemas']['ProviderRequest'];
 	type Done = Promise<Result<unknown, ApiError>>;
+	type Tested = Promise<Result<components['schemas']['ConnectionTest'], ApiError>>;
 
 	let {
 		providers,
 		text,
 		save,
 		remove: drop,
+		test,
 		secretFile = false
 	}: {
 		providers: Provider[];
@@ -35,6 +38,8 @@
 		/** Creates (no id) or changes a provider. */
 		save: (body: Request, id?: string) => Done;
 		remove: (id: string) => Done;
+		/** The issuer's connection test (its discovery), as typed. */
+		test: (issuer: string) => Tested;
 		/** The secret may be a file path on the server (the instance's providers). */
 		secretFile?: boolean;
 	} = $props();
@@ -148,6 +153,7 @@
 			placeholder="https://auth.example.com"
 			bind:value={issuer}
 		/>
+		<ConnectionTest run={() => test(issuer.trim())} />
 	</div>
 	<div class="grid gap-2">
 		<Label for="provider-client">{m.provider_client_id()}</Label>
