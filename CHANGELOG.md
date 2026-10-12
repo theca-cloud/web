@@ -1,6 +1,20 @@
 # Changelog
 
 Every release of the web app: the `web` image holding its build, assembled with `core` by `ce`.
+## [0.4.0] - 2026-10-12
+
+### Features
+
+- The admin's settings as cards, each group edited in a dialog
+- Connection tests for SMTP, storages and identity providers
+
+### Fixes
+
+- Whatever can be clicked shows the pointer cursor
+
+### Documentation
+
+- **claude**: Keep only what is specific to theca, the rest is global
 ## [0.3.1] - 2026-10-08
 
 ### Fixes

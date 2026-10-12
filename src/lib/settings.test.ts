@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { controlOf, groupOf, parseRate, refusedKey, splitSeconds, type Labels } from './settings';
+import {
+	controlOf,
+	groupOf,
+	parseRate,
+	refusedKey,
+	shown,
+	splitSeconds,
+	type Labels
+} from './settings';
 
 const l: Labels = {
 	open: 'Open',
@@ -36,6 +44,10 @@ describe('controlOf', () => {
 	it('groups them, unknown keys last', () => {
 		expect(groupOf('smtp_host', controlOf('smtp_host', l))).toBe('smtp');
 		expect(groupOf('password_strength', controlOf('password_strength', l))).toBe('access');
+		expect(groupOf('trash_retention_secs', controlOf('trash_retention_secs', l))).toBe('storage');
+		expect(groupOf('job_cleanup_interval_secs', controlOf('job_cleanup_interval_secs', l))).toBe(
+			'jobs'
+		);
 		expect(groupOf('some_future_key', controlOf('some_future_key', l))).toBe('other');
 	});
 });
@@ -52,5 +64,21 @@ describe('conversions', () => {
 		expect(parseRate('10/60')).toEqual({ count: 10, seconds: 60 });
 		expect(parseRate('ten')).toBeNull();
 		expect(refusedKey('invalid setting smtp_port: invalid digit')).toBe('smtp_port');
+	});
+});
+
+describe('shown', () => {
+	const w = {
+		units: { seconds: 's', minutes: 'min', hours: 'h', days: 'd' },
+		rate: (count: number, per: string) => `${count}/${per}`,
+		empty: '(empty)'
+	};
+	it('shows a value as the page does', () => {
+		expect(shown('closed', controlOf('registration', l), w)).toBe('Closed');
+		expect(shown('2592000', controlOf('trash_retention_secs', l), w)).toBe('30 d');
+		expect(shown('0', controlOf('session_max_lifetime_secs', l), w)).toBe('No limit');
+		expect(shown('30/300', controlOf('rate_limit_login_ip', l), w)).toBe('30/5 min');
+		expect(shown('Theca', controlOf('instance_name', l), w)).toBe('Theca');
+		expect(shown('', controlOf('smtp_username', l), w)).toBe('(empty)');
 	});
 });

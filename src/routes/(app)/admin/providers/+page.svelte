@@ -18,4 +18,5 @@
 			: call(api.POST('/api/v1/admin/identity-providers', { body }))}
 	remove={(id) =>
 		call(api.DELETE('/api/v1/admin/identity-providers/{id}', { params: { path: { id } } }))}
+	test={(issuer) => call(api.POST('/api/v1/admin/identity-providers/test', { body: { issuer } }))}
 />

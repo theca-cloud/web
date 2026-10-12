@@ -123,6 +123,13 @@ test('library groups and the login provider', async ({ page }) => {
 	const dialog = page.getByRole('dialog');
 	await dialog.getByLabel(en.name).fill('Corporate SSO');
 	await dialog.getByLabel(en.provider_issuer).fill('https://localhost');
+	// Its test goes through the SSRF guard, as its logins would: refused.
+	await dialog.getByRole('button', { name: en.connection_test }).click();
+	await expect(
+		dialog
+			.getByRole('status')
+			.filter({ hasText: new RegExp(`^${en.connection_failed.split('{')[0]}`) })
+	).toBeVisible();
 	await dialog.getByLabel(en.provider_client_id).fill('theca');
 	await dialog.getByLabel(en.provider_secret).fill('a client secret');
 	await dialog.getByRole('button', { name: en.create }).click();

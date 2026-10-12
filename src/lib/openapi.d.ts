@@ -80,6 +80,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/identity-providers/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test an instance-wide identity provider's issuer before saving it:
+         *     discovery, the issuer it declares, its signing keys. Nothing is saved.
+         */
+        post: operations["admin_provider_test"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/identity-providers/{id}": {
         parameters: {
             query?: never;
@@ -196,6 +216,46 @@ export interface paths {
         patch: operations["change_settings"];
         trace?: never;
     };
+    "/api/v1/admin/smtp/send-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a test email to the calling admin, at once (not queued), with the
+         *     SMTP settings as `smtp/test` takes them: the server's answer.
+         */
+        post: operations["admin_smtp_send_test"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/smtp/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test SMTP settings (the saved ones, with the given `smtp_*` values over
+         *     them, nothing stored): connect, TLS, log in. A failed test is an answer.
+         */
+        post: operations["admin_smtp_test"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/storages": {
         parameters: {
             query?: never;
@@ -208,6 +268,26 @@ export interface paths {
         put?: never;
         /** Add a shared storage, tested first (write, read back, delete). */
         post: operations["add_storage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/storages/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test a storage before adding it: write, read back, delete a small object.
+         *     Nothing is saved. A failed test is an answer.
+         */
+        post: operations["admin_storage_test"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1343,6 +1423,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/organizations/{id}/identity-providers/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test an issuer before saving it as the organization's provider (the
+         *     owner): discovery, the issuer it declares, its signing keys, through the
+         *     SSRF guard as a login would (unless `oidc_allow_internal_issuers`).
+         */
+        post: operations["organization_test_provider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organizations/{id}/identity-providers/{provider}": {
         parameters: {
             query?: never;
@@ -1510,6 +1611,27 @@ export interface paths {
          *     delete). The token goes in `X-Theca-Setup-Token`.
          */
         post: operations["run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/setup/storage-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test a storage during the setup, before submitting it (the setup probes it
+         *     again): write, read back, delete a small object. The setup's token, its rate
+         *     limit, and only while the instance isn't set up. A failed test is an answer.
+         */
+        post: operations["setup_storage_test"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1757,6 +1879,17 @@ export interface components {
              * @description The new version, now current.
              */
             version: string;
+        };
+        /**
+         * @description A connection test's outcome (`POST /admin/smtp/test`, `/admin/smtp/send-test`,
+         *     `/admin/storages/test`, `/setup/storage-test`): a failed test is an answer,
+         *     not a refused request.
+         */
+        ConnectionTest: {
+            /** @description The server's answer, or what failed (in English, from the library). */
+            message: string;
+            /** @description It worked. */
+            ok: boolean;
         };
         /** @description A copy. */
         CopyNode: {
@@ -2439,6 +2572,11 @@ export interface components {
             /** @description Shown on the login screen. */
             name?: string | null;
         };
+        /** @description An identity provider to test (`POST .../identity-providers/test`). */
+        ProviderTest: {
+            /** @description Its issuer URL, as typed. */
+            issuer: string;
+        };
         /**
          * @description One-time recovery codes, each usable once instead of a TOTP code. Shown
          *     only now: the server only keeps their hashes.
@@ -3054,6 +3192,29 @@ export interface operations {
             };
         };
     };
+    admin_provider_test: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderTest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionTest"];
+                };
+            };
+        };
+    };
     admin_delete_provider: {
         parameters: {
             query?: never;
@@ -3357,6 +3518,74 @@ export interface operations {
             };
         };
     };
+    admin_smtp_send_test: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionTest"];
+                };
+            };
+            /** @description `invalid_setting`, `unknown_setting` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    admin_smtp_test: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: string | null;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionTest"];
+                };
+            };
+            /** @description `invalid_setting`, `unknown_setting` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     storages: {
         parameters: {
             query?: never;
@@ -3413,6 +3642,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    admin_storage_test: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageBackend"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionTest"];
                 };
             };
         };
@@ -5606,6 +5858,31 @@ export interface operations {
             };
         };
     };
+    organization_test_provider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderTest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionTest"];
+                };
+            };
+        };
+    };
     organization_delete_provider: {
         parameters: {
             query?: never;
@@ -6053,6 +6330,56 @@ export interface operations {
             };
             /** @description `already_set_up`, `storage_name_taken` */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    setup_storage_test: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageBackend"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionTest"];
+                };
+            };
+            /** @description `invalid_setup_token` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description `already_set_up` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description `rate_limited` */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
