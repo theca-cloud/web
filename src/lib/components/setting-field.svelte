@@ -1,15 +1,17 @@
 <script lang="ts">
-	// One setting, shown by its control (`#lib/settings.ts`). `value` is the
-	// stored text, `''` for the default (sent as `null`).
+	// One setting, shown by its control (`#lib/settings.ts`): its human name,
+	// then what it does and its key, muted. `value` is the stored text, `''`
+	// for the default (sent as `null`).
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 	import { NativeSelect } from '#lib/components/ui/native-select/index.js';
 	import { m } from '#lib/paraglide/messages.js';
-	import { parseRate, splitSeconds, units, type Control, type Unit } from '#lib/settings.js';
+	import { parseRate, shown, splitSeconds, units, type Control, type Unit } from '#lib/settings.js';
 
 	let {
 		key,
+		name,
 		description,
 		fallback,
 		control,
@@ -17,6 +19,8 @@
 		error
 	}: {
 		key: string;
+		/** Its human name (the key for a setting this app doesn't know). */
+		name: string;
 		description: string;
 		/** The setting's default, as stored. */
 		fallback: string;
@@ -46,23 +50,13 @@
 	}
 
 	/** The default as the page shows it. */
-	const shownDefault = $derived.by(() => {
-		if (control.kind === 'choice') {
-			return control.options.find(([v]) => v === fallback)?.[1] ?? fallback;
-		}
-		if (control.kind === 'duration') {
-			if (Number(fallback) === 0 && control.zero) return control.zero;
-			const s = splitSeconds(Number(fallback));
-			return `${s.count} ${unitNames[s.unit]}`;
-		}
-		if (control.kind === 'rate') {
-			const r = parseRate(fallback);
-			if (!r) return fallback;
-			const s = splitSeconds(r.seconds);
-			return m.rate_shown({ count: r.count, per: `${s.count} ${unitNames[s.unit]}` });
-		}
-		return fallback || m.setting_empty();
-	});
+	const shownDefault = $derived(
+		shown(fallback, control, {
+			units: unitNames,
+			rate: (count, per) => m.rate_shown({ count, per }),
+			empty: m.setting_empty()
+		})
+	);
 </script>
 
 {#snippet durationFields(label: string)}
@@ -85,13 +79,13 @@
 	</NativeSelect>
 {/snippet}
 
-<div class="grid gap-1.5 border-b py-3 last:border-b-0">
-	<div class="flex flex-wrap items-baseline gap-x-2">
-		<Label for={id} class="font-mono text-xs">{key}</Label>
-		<span class="text-xs text-muted-foreground">{m.setting_default({ value: shownDefault })}</span>
-	</div>
+<div class="grid gap-1 border-b py-4 first:pt-0 last:border-b-0">
+	<Label for={id} class="text-sm font-medium text-foreground">{name}</Label>
 	<p class="text-sm text-muted-foreground">{description}</p>
-	<div class="flex flex-wrap items-center gap-2">
+	<p class="text-xs text-muted-foreground">
+		<code class="font-mono">{key}</code> · {m.setting_default({ value: shownDefault })}
+	</p>
+	<div class="mt-1.5 flex flex-wrap items-center gap-2">
 		{#if control.kind === 'choice'}
 			<NativeSelect {id} bind:value>
 				<option value="">{m.setting_default({ value: shownDefault })}</option>
@@ -105,7 +99,7 @@
 					{m.setting_change()}
 				</Button>
 			{:else}
-				{@render durationFields(key)}
+				{@render durationFields(name)}
 				{#if control.zero && value === '0'}
 					<span class="text-sm text-muted-foreground">{control.zero}</span>
 				{/if}
@@ -120,13 +114,13 @@
 					{id}
 					type="number"
 					min="0"
-					aria-label={key}
+					aria-label={name}
 					class="w-24"
 					value={rate?.count ?? 0}
 					onchange={(e) => (value = `${e.currentTarget.value}/${seconds}`)}
 				/>
 				<span class="text-sm">{m.rate_per()}</span>
-				{@render durationFields(`${key} (${m.rate_window()})`)}
+				{@render durationFields(`${name} (${m.rate_window()})`)}
 			{/if}
 		{:else}
 			<Input

@@ -107,48 +107,49 @@ test('settings, storages and jobs', async ({ page }) => {
 	});
 	await openAdmin(page, en.admin_settings, 'settings');
 
-	// Saves the edits, waiting for the save (nothing left to save).
+	// A card's dialog: opened, edited, saved (closed once saved).
+	const card = (title: string) => page.getByRole('button', { name: `${en.edit}: ${title}` });
+	const dialog = page.getByRole('dialog');
 	const save = async () => {
-		await page.getByRole('button', { name: en.settings_save.replace('{count}', '1') }).click();
-		await expect(
-			page.getByRole('button', { name: en.settings_save.replace('{count}', '0') })
-		).toBeDisabled();
+		await dialog.getByRole('button', { name: en.save, exact: true }).click();
+		await expect(dialog).toBeHidden();
 	};
 
-	// A setting through its control, saved, then back to its default.
-	const name = page.locator('#setting-instance_name');
-	await name.fill('Theca under test');
+	// A setting through its control, saved (the card says it), then back to its default.
+	await card(en.settings_general).click();
+	await dialog.locator('#setting-instance_name').fill('Theca under test');
 	await save();
 	await expect(page.getByText(en.settings_saved)).toBeVisible();
-	await page.getByRole('button', { name: en.setting_reset }).first().click();
+	await expect(page.getByText(`${en.setting_name_instance_name}: Theca under test`)).toBeVisible();
+	await card(en.settings_general).click();
+	await dialog.getByRole('button', { name: en.setting_reset }).click();
 	await save();
-	await expect(name).toHaveValue('');
+	await expect(page.getByText(`${en.setting_name_instance_name}: Theca under test`)).toBeHidden();
 
 	// A number: sent as the setting's text.
-	const pending = page.getByRole('textbox', { name: 'max_pending_uploads' });
+	const storageCard = en.settings_storage;
+	const pending = dialog.getByRole('textbox', { name: en.setting_name_max_pending_uploads });
+	await card(storageCard).click();
 	await pending.fill('16');
 	await save();
+	await card(storageCard).click();
 	await expect(pending).toHaveValue('16');
 	await pending.fill('');
 	await save();
-	await expect(pending).toHaveValue('');
 
-	// A duration: shown in its unit, refused value said at its field.
-	await page.getByRole('button', { name: 'trash_retention_secs' }).click();
-	await expect(page.getByRole('spinbutton', { name: 'trash_retention_secs' })).toHaveValue('30');
-	await expect(
-		page.getByRole('combobox', { name: `trash_retention_secs (${en.unit})` })
-	).toHaveValue('days');
-	await expect(
-		page.getByRole('button', { name: en.settings_save.replace('{count}', '1') })
-	).toBeEnabled();
-	await page.getByRole('button', { name: en.settings_discard }).click();
+	// A duration: shown in its unit; cancelled, nothing sent.
+	const trash = en.setting_name_trash_retention_secs;
+	await card(storageCard).click();
+	await dialog.getByRole('button', { name: trash }).click();
+	await expect(dialog.getByRole('spinbutton', { name: trash })).toHaveValue('30');
+	await expect(dialog.getByRole('combobox', { name: `${trash} (${en.unit})` })).toHaveValue('days');
+	await dialog.getByRole('button', { name: en.cancel }).click();
+	await expect(dialog).toBeHidden();
 
 	// A storage added (a directory below the server's own), not made default.
 	await tab_(page, en.admin_storages, 'storages');
 	const storage = `extra-${Date.now()}`;
 	await page.getByRole('button', { name: en.storage_add }).click();
-	const dialog = page.getByRole('dialog');
 	await dialog.getByLabel(en.setup_storage_name).fill(storage);
 	await dialog.getByLabel(en.setup_path).fill(`${storageRoot}/${storage}`);
 	await dialog.getByRole('button', { name: en.storage_add }).click();

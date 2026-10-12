@@ -10,7 +10,7 @@ export type Control =
 	| { kind: 'text' }
 	| { kind: 'raw' };
 
-export type Group = 'general' | 'access' | 'smtp' | 'limits' | 'jobs' | 'other';
+export type Group = 'general' | 'access' | 'smtp' | 'storage' | 'limits' | 'jobs' | 'other';
 
 /** Labels the matcher needs, from the page's messages. */
 export type Labels = {
@@ -64,10 +64,18 @@ export function controlOf(key: string, l: Labels): Control {
 	return { kind: 'raw' };
 }
 
-/** Where a setting shows on the page. */
+const storage = [
+	'trash_retention_secs',
+	'gc_grace_period_secs',
+	'presigned_url_lifetime_secs',
+	'max_pending_uploads'
+];
+
+/** Where a setting shows on the page: the card, and the dialog it opens. */
 export function groupOf(key: string, control: Control): Group {
 	if (control.kind === 'raw') return 'other';
 	if (key.startsWith('smtp_')) return 'smtp';
+	if (storage.includes(key)) return 'storage';
 	if (key.startsWith('rate_limit_')) return 'limits';
 	if (key.startsWith('job_')) return 'jobs';
 	if (['registration', 'organization_creation', 'password_strength'].includes(key)) return 'access';
@@ -86,6 +94,33 @@ export function splitSeconds(seconds: number): { count: number; unit: Unit } {
 		}
 	}
 	return { count: seconds, unit: 'seconds' };
+}
+
+/** Words `shown` needs, from the page's messages. */
+export type Shown = {
+	units: Record<Unit, string>;
+	rate: (count: number, per: string) => string;
+	empty: string;
+};
+
+/** A stored value as the page shows it: a choice's label, a duration in its
+ *  unit, a rate as "count per duration", the text otherwise. */
+export function shown(value: string, control: Control, w: Shown): string {
+	if (control.kind === 'choice') {
+		return control.options.find(([v]) => v === value)?.[1] ?? value;
+	}
+	if (control.kind === 'duration') {
+		if (Number(value) === 0 && control.zero) return control.zero;
+		const s = splitSeconds(Number(value));
+		return `${s.count} ${w.units[s.unit]}`;
+	}
+	if (control.kind === 'rate') {
+		const r = parseRate(value);
+		if (!r) return value;
+		const s = splitSeconds(r.seconds);
+		return w.rate(r.count, `${s.count} ${w.units[s.unit]}`);
+	}
+	return value || w.empty;
 }
 
 /** A rate limit's text (`count/seconds`) as its parts; `null` if it isn't one. */
