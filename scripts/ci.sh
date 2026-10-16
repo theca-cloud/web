@@ -28,6 +28,12 @@ esac
 [ -d node_modules ] || npm ci
 
 if [ "$step" = all ] || [ "$step" = lint ]; then
+    # CI's server is the core this app is built for: Woodpecker can't read
+    # package.json, so its image tag is written there, and checked here.
+    pin=$(node -p "require('./package.json').dependencies['@theca/client']")
+    tags=$(grep -o 'theca/core:[^ ]*' .woodpecker/ci.yaml | sort -u)
+    [ "$tags" = "theca/core:$pin" ] ||
+        { echo ".woodpecker/ci.yaml runs $(echo $tags), not the pinned core $pin" >&2; exit 1; }
     npm run lint
     npm run check
     scripts/api-types.sh

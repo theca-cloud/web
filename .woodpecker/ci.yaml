@@ -1,15 +1,17 @@
 # Every branch (dev and prod included) and pull request, when something built
 # or tested changed; manual runs always. Each step is a part of scripts/ci.sh,
 # so a red step says what failed; steps share the workspace (node_modules/ and
-# build/ carry over).
+# build/ carry over). The only pipeline besides release.yaml: no release
+# candidate to build, ce builds web from source.
 when:
   - event: [push, pull_request]
-    # Nothing built or tested changed: docs, the roadmap, local-only scripts,
+    # Nothing built or tested changed: docs, local-only scripts,
     # repo housekeeping.
     path:
-      exclude: ["**/*.md", "roadmap/**", "scripts/dev.sh", "scripts/install-hooks.sh", "scripts/release.sh", "LICENSE", ".githooks/**", "docker-compose.yml", "cliff.toml", ".mcp.json", ".nvmrc", "components.json"]
-    # Not the release merge coming back into dev: prod just tested that very code.
-    evaluate: 'not (CI_COMMIT_BRANCH == "dev" && CI_COMMIT_MESSAGE startsWith "Merge branch ''dev'' into prod")'
+      exclude: ["**/*.md", "scripts/dev.sh", "scripts/install-hooks.sh", "scripts/release.sh", "LICENSE", ".githooks/**", "docker-compose.yml", "cliff.toml", ".mcp.json", ".nvmrc", "components.json"]
+    # Not a version commit (scripts/release.sh, `1.2.3`): it only bumps the
+    # version on code dev already tested, on prod and coming back into dev.
+    evaluate: 'not (trim(CI_COMMIT_MESSAGE) matches "^[0-9]+[.][0-9]+[.][0-9]+$")'
   - event: manual
 
 # A fixed workspace path: the server step reads its files (and the app's build)
@@ -75,11 +77,12 @@ steps:
       - head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' >data/secrets/data_fresh.key
       - chmod -R a+rwX data
 
-  # The server the tests run against: core's latest release candidate, in the
-  # background for the rest of the pipeline, serving the app's build as in
+  # The server the tests run against: the core this app is built for, its tag
+  # the @theca/client pin in package.json (scripts/ci.sh refuses another), in
+  # the background for the rest of the pipeline, serving the app's build as in
   # production (build/ is read per request: it can come after the start).
   - name: theca
-    image: git.pband.ch/theca/core:0-rc
+    image: git.pband.ch/theca/core:0.19.0
     pull: true
     detach: true
     depends_on: [server-files]
@@ -103,7 +106,7 @@ steps:
       - createdb -h postgres -U theca theca_fresh
 
   - name: theca-fresh
-    image: git.pband.ch/theca/core:0-rc
+    image: git.pband.ch/theca/core:0.19.0
     pull: true
     detach: true
     depends_on: [server-files, fresh-db]
