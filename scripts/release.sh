@@ -1,11 +1,17 @@
 #!/usr/bin/env sh
-# Prepares a release on `dev`, or `prod` for a hotfix (docs/CONTRIBUTING.md,
-# Releases): the next version from the Conventional Commits since the last
-# release (git-cliff), written to package.json, CHANGELOG.md, committed as
-# `chore(release): X.Y.Z`. Then merge `dev` into `prod` (git merge --no-ff dev):
-# its pipeline publishes the image and the release.
-#   scripts/release.sh            prepare and commit
+# Releases `dev` into `prod` (or a hotfix already on `prod`): runs scripts/ci.sh,
+# merges with --no-ff, bumps the version in Cargo.toml / package.json, prepends
+# the release to CHANGELOG.md (git-cliff, cliff.toml), commits it all as the
+# version (`1.2.3`), tags it, and fast-forwards `dev`. Never pushes.
+#
+# The version comes from the Conventional Commits on `dev` (cliff.toml's [bump]),
+# except 1.0.0: going to 1.0.0 is a decision, so it is never automatic.
+#   scripts/release.sh            the next version, from the commits
+#   scripts/release.sh 1.0.0      that version
 #   scripts/release.sh --dry-run  show the version and the changelog only
+#
+# Copied into each project: adapt the bump step if versions live elsewhere
+# (sibling crates' dependency lines, a nested package.json, openapi.json...).
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -14,30 +20,82 @@ die() {
     exit 1
 }
 command -v git-cliff >/dev/null 2>&1 || die "git-cliff is missing (brew install git-cliff)"
-case "$(git branch --show-current)" in
-dev | prod) ;; # prod: a hotfix
-*) die "releases are prepared on dev (or prod, for a hotfix)" ;;
+branch=$(git branch --show-current)
+case "$branch" in
+dev | prod) ;; # prod: a hotfix squashed into prod
+*) die "releases start from dev (or prod, for a hotfix)" ;;
 esac
 [ -z "$(git status --porcelain)" ] || die "commit or stash your changes first"
-git fetch -q --tags origin
+git remote | grep -qx origin && git fetch -q --tags origin
 
-current=$(node -p "require('./package.json').version")
-if git tag --list 'v*' | grep -q .; then
-    next=$(git cliff --bumped-version | sed 's/^v//')
+dry=
+next=
+for arg in "$@"; do
+    case "$arg" in
+    --dry-run) dry=1 ;;
+    *) next=$arg ;;
+    esac
+done
+
+if [ -f Cargo.toml ]; then
+    current=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)
+elif [ -f package.json ]; then
+    current=$(sed -n 's/^  "version": "\(.*\)",*$/\1/p' package.json | head -1)
 else
-    next=$current # the first release: the version package.json already has
+    die "no Cargo.toml or package.json: adapt this script"
 fi
-git tag --list | grep -qx "v$next" && die "v$next is already released: nothing new to release"
 
-if [ "${1:-}" = --dry-run ]; then
+if [ -z "$next" ]; then
+    if git tag --list '[0-9]*.*.*' | grep -q .; then
+        next=$(git cliff --bumped-version)
+        [ "$next" != 1.0.0 ] || die "1.0.0 is your call: scripts/release.sh 1.0.0"
+    else
+        next=$current # the first release: the version the manifest already has
+    fi
+fi
+echo "$next" | grep -Eqx '[0-9]+\.[0-9]+\.[0-9]+' || die "not a version: $next"
+git rev-parse -q --verify "refs/tags/$next" >/dev/null && die "$next is already released"
+
+# The changelog section, written now: dev's commits aren't on prod until the merge.
+changes=$(mktemp)
+git cliff --unreleased --tag "$next" --strip header >"$changes"
+
+if [ -n "$dry" ]; then
     echo "Next version: $next (now $current)"
-    git cliff --unreleased --tag "v$next" --strip header
+    cat "$changes"
     exit 0
 fi
 
-[ "$next" = "$current" ] || npm version -q --no-git-tag-version "$next" >/dev/null
-git cliff --tag "v$next" -o CHANGELOG.md
-git add package.json package-lock.json CHANGELOG.md
-git commit -q -m "chore(release): $next"
-echo "Release $next prepared on dev. Next: push dev, wait for its CI, then"
-echo "  git checkout prod && git merge --no-ff dev && git push"
+[ -x scripts/ci.sh ] && { scripts/ci.sh || die "scripts/ci.sh failed: nothing released"; }
+
+if [ "$branch" = dev ]; then
+    git checkout -q prod
+    git merge -q --no-ff --no-commit dev >/dev/null || die "merge conflict: resolve it, or git merge --abort"
+fi
+
+if [ -f Cargo.toml ]; then
+    sed -i.bak "s/^version = \"$current\"$/version = \"$next\"/" Cargo.toml
+    rm Cargo.toml.bak
+    cargo update -q --workspace
+fi
+if [ -f package.json ]; then
+    npm version "$next" --no-git-tag-version --allow-same-version >/dev/null
+fi
+if [ -s "$changes" ]; then # empty when only skipped commits (chore, test...)
+    [ -f CHANGELOG.md ] || printf '# Changelog\n\n' >CHANGELOG.md
+    { head -n 2 CHANGELOG.md; cat "$changes"; echo; tail -n +3 CHANGELOG.md; } >"$changes.new"
+    mv "$changes.new" CHANGELOG.md
+    git add CHANGELOG.md
+fi
+rm -f "$changes"
+
+git add -u
+git commit -q -m "$next"
+git tag -a "$next" -m "$next"
+git checkout -q dev
+if [ "$branch" = dev ]; then
+    git merge -q --ff-only prod
+    echo "Released $next. Push: git push origin prod dev $next"
+else
+    echo "Released $next on prod. Bring it into dev: git merge prod, then push prod, dev and $next"
+fi

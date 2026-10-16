@@ -1,6 +1,15 @@
 # Changelog
 
-Every release of the web app: the `web` image holding its build, assembled with `core` by `ce`.
+## [1.0.0] - 2026-10-16
+
+### Features
+
+- Core 1.0.0
+
+### Build and CI
+
+- The global workflow; no web image, tested against the core it pins (**breaking**)
+
 ## [0.4.0] - 2026-10-12
 
 ### Features

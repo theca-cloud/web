@@ -1,7 +1,8 @@
 name: theca-web-dev
 
-# The server the web app is developed and tested against: core's latest release
-# candidate, with Postgres. Run scripts/dev.sh rather than `docker compose up`
+# The server the web app is developed and tested against: the core it's built
+# for (CORE_VERSION, the @theca/client pin, written into .env by scripts/dev.sh),
+# with Postgres. Run scripts/dev.sh rather than `docker compose up`
 # directly: it writes the secrets this file mounts and sets the instance up.
 services:
   postgres:
@@ -23,7 +24,7 @@ services:
       retries: 15
 
   theca:
-    image: git.pband.ch/theca/core:0-rc
+    image: git.pband.ch/theca/core:${CORE_VERSION}
     user: ${HOST_USER}
     depends_on:
       postgres:
@@ -67,7 +68,7 @@ services:
   # A second server, never set up, serving the built app: the setup wizard's
   # tests. Open setup (no token: tests can't read its logs).
   theca-fresh:
-    image: git.pband.ch/theca/core:0-rc
+    image: git.pband.ch/theca/core:${CORE_VERSION}
     user: ${HOST_USER}
     depends_on:
       fresh-db:

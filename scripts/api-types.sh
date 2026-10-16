@@ -2,7 +2,7 @@
 # The API types (src/lib/openapi.d.ts, committed) from the openapi.json of the core
 # release this app is pinned to: the exact version of @theca/client in
 # package.json. One pin for both, so the engine and the types never drift.
-# Run it after bumping @theca/client (read ../docs/BREAKING.md first).
+# Run it after bumping @theca/client.
 set -eu
 cd "$(dirname "$0")/.."
 # The registry token: GITEA_TOKEN, else .secrets/gitea_token (ignored by git).
@@ -16,9 +16,11 @@ case "$version" in
     exit 1
     ;;
 esac
+# Release tags: vX.Y.Z before 1.0.0, X.Y.Z from it.
+case "$version" in 0.*) tag=v$version ;; *) tag=$version ;; esac
 spec=$(mktemp)
 trap 'rm -f "$spec"' EXIT
 curl -fsSL -H "Authorization: token ${GITEA_TOKEN:?GITEA_TOKEN: see the README}" -o "$spec" \
-    "https://git.pband.ch/theca/core/releases/download/v$version/openapi.json"
+    "https://git.pband.ch/theca/core/releases/download/$tag/openapi.json"
 # Pinned, run apart: it wants TypeScript 5 as a peer, the app has 6.
 npx -y openapi-typescript@7.13.0 "$spec" -o src/lib/openapi.d.ts

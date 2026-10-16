@@ -1,13 +1,15 @@
 #!/usr/bin/env sh
-# Starts the dev server (core's latest release candidate, with Postgres), set
-# up with the dev admin. Idempotent: run it as often as needed.
-#   scripts/dev.sh          start (pulling the latest rc)
+# Starts the dev server (the core this app is built for: the @theca/client pin,
+# with Postgres), set up with the dev admin. Idempotent: run it as often as needed.
+#   scripts/dev.sh          start
 #   scripts/dev.sh --down   stop, keeping the data
 #   scripts/dev.sh --fresh  the second server (setup wizard tests) back to never set up
 # Start over: scripts/dev.sh --down && rm -rf data/
 set -eu
 cd "$(dirname "$0")/.."
 export HOST_USER="$(id -u):$(id -g)"
+# The compose's core image: the pin, for docker compose (it reads .env).
+printf 'CORE_VERSION=%s\n' "$(node -p "require('./package.json').dependencies['@theca/client']")" >.env
 
 if [ "${1:-}" = --down ]; then
     docker compose down
