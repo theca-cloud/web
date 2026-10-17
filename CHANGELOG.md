@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.0] - 2026-10-17
+
+### Features
+
+- The Theca mark, the favicon and tab titles
+
+### Documentation
+
+- The README sends users to the CE and its demo
+
 ## [1.0.0] - 2026-10-16
 
 ### Features

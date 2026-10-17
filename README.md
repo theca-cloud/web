@@ -1,5 +1,7 @@
 # Theca web
 
+**Looking for Theca itself?** It's a self-hosted cloud storage: run it from [theca-cloud/ce](https://github.com/theca-cloud/ce) (the `thecacloud/ce` image), or [try the demo](https://demo.theca.rs). This repository is for developers.
+
 The web app of Theca, a self-hosted cloud storage: a SvelteKit single-page app, served by the `core` server and shipped in the CE image (`thecacloud/ce` on Docker Hub), which builds it from this source.
 
 Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).

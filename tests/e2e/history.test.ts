@@ -148,13 +148,14 @@ test('previews: shown as the browser can, never running script', async ({ page }
 			{ name: 'blob.bin', buffer: randomBytes(1000) },
 			{ name: 'large.png', buffer: randomBytes(6 * 1024 * 1024), mimeType: 'image/png' }
 		]);
-		const title = await page.title();
 		const preview = page.getByRole('region', { name: en.preview });
 		const open = async (name: string) => {
 			await page.goto(`/${library.organization}/${library.id}`);
 			await page.getByRole('link', { name, exact: true }).click();
 			await expect(page.getByRole('heading', { name })).toBeVisible();
 		};
+		// Each payload's script would rename the tab: checked while its preview is open.
+		const noScript = async () => expect(await page.title()).not.toBe('pwned');
 
 		await open('dot.png');
 		await expect
@@ -168,10 +169,12 @@ test('previews: shown as the browser can, never running script', async ({ page }
 		await expect
 			.poll(() => preview.locator('img').evaluate((img: HTMLImageElement) => img.naturalWidth))
 			.toBe(10);
+		await noScript();
 
 		await open('page.html');
 		const frame = preview.frameLocator('iframe');
 		await expect(frame.locator('#hello')).toHaveText('Hello from HTML');
+		await noScript();
 		await preview.getByRole('button', { name: en.preview_raw }).click();
 		await expect(preview.locator('pre')).toContainText('<p id="hello">');
 
@@ -185,9 +188,6 @@ test('previews: shown as the browser can, never running script', async ({ page }
 
 		await open('blob.bin');
 		await expect(preview.locator('img, video, audio, iframe, pre')).toHaveCount(0);
-
-		// No script ran: neither the SVG's nor the HTML's.
-		expect(await page.title()).toBe(title);
 	} finally {
 		await dropLibrary(library);
 	}
