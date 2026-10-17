@@ -29,7 +29,8 @@
 	type Library = components['schemas']['Library'];
 	type Me = components['schemas']['Me'];
 
-	let { me, libraries }: { me: Me; libraries: Library[] } = $props();
+	let { me, libraries, instanceName }: { me: Me; libraries: Library[]; instanceName: string } =
+		$props();
 
 	// The personal organization first, as "My files"; invitations not accepted are left out.
 	const organizations = $derived(
@@ -126,6 +127,10 @@
 
 <Sidebar.Root>
 	<Sidebar.Header>
+		<div class="flex items-center gap-2 px-2 py-1 text-sm font-semibold">
+			<img src="/favicon.svg" alt={m.app_name()} class="size-5" />
+			<span class="truncate">{instanceName}</span>
+		</div>
 		<form role="search" onsubmit={search}>
 			<label class="relative block">
 				<span class="sr-only">{m.search()}</span>

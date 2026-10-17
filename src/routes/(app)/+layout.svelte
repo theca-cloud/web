@@ -15,7 +15,7 @@
 </script>
 
 <Sidebar.Provider>
-	<AppSidebar me={data.me} libraries={data.libraries} />
+	<AppSidebar me={data.me} libraries={data.libraries} instanceName={data.instance.name} />
 	<Sidebar.Inset>
 		<div class="flex h-12 items-center gap-2 border-b px-4">
 			<Sidebar.Trigger aria-label={m.open_sidebar()} class="-ml-1" />
