@@ -76,6 +76,9 @@ test('folders: created, renamed, moved, copied, deleted and undone', async ({ pa
 		await rowAction(page, 'Beta', en.copy);
 		await page.getByRole('dialog').getByRole('button', { name: library.name }).click();
 		await page.getByRole('button', { name: en.copy_here }).click();
+		// Copied (the dialog closes) before leaving: navigating at once could
+		// cancel the request still in flight.
+		await expect(page.getByRole('dialog')).toBeHidden();
 		await page.goto(`/${library.organization}/${library.id}`);
 		await expect(row(page, 'Beta')).toBeVisible();
 

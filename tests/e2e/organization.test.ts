@@ -142,6 +142,9 @@ test('library groups and the login provider', async ({ page }) => {
 	await asAdmin('PATCH', '/api/v1/admin/settings', { oidc_allow_internal_issuers: 'true' });
 	try {
 		await dialog.getByRole('button', { name: en.create }).click();
+		// Created (the dialog closes) before the setting goes back: a click
+		// returns before the server answers, which then refused it at times.
+		await expect(dialog).toBeHidden();
 	} finally {
 		await asAdmin('PATCH', '/api/v1/admin/settings', { oidc_allow_internal_issuers: 'false' });
 	}
