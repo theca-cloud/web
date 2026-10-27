@@ -101,11 +101,6 @@
 	</section>
 
 	<section class="grid gap-2">
-		{@render section(m.groups())}
-		<OrgGroups organization={id} groups={data.groups} libraries={data.libraries} />
-	</section>
-
-	<section class="grid gap-2">
 		{@render section(m.provider())}
 		<IdentityProviders
 			providers={data.providers}
@@ -139,6 +134,17 @@
 				)}
 		/>
 	</section>
+
+	<!-- Library groups (namespaces): rarely needed, since each person deduplicates
+	     across every library they can access (../docs/docs/dedup.md, ADR 0002). -->
+	<details>
+		<summary class="cursor-pointer font-medium">{m.advanced()}</summary>
+		<section class="mt-4 grid gap-2">
+			{@render section(m.groups())}
+			<p class="text-sm text-muted-foreground">{m.groups_advanced_text()}</p>
+			<OrgGroups organization={id} groups={data.groups} libraries={data.libraries} />
+		</section>
+	</details>
 
 	<section class="grid gap-2">
 		{@render section(m.ownership())}

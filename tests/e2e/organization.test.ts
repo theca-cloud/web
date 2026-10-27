@@ -99,6 +99,11 @@ test('library groups and the login provider', async ({ page }) => {
 	await newLibrary(page, id, 'All staff');
 	await page.goto(`/${id}/settings`);
 
+	// Library groups are advanced: folded away until asked for.
+	await expect(page.getByText(en.groups_none)).toBeHidden();
+	// By its text: a <summary> has no reliable role to find it by.
+	await page.getByText(en.advanced, { exact: true }).click();
+	await expect(page.getByText(en.groups_advanced_text)).toBeVisible();
 	await expect(page.getByText(en.groups_none)).toBeVisible();
 	await page.getByRole('button', { name: en.group_create }).click();
 	await page.getByRole('dialog').getByLabel(en.name).fill('Shared');
@@ -137,6 +142,9 @@ test('library groups and the login provider', async ({ page }) => {
 	await asAdmin('PATCH', '/api/v1/admin/settings', { oidc_allow_internal_issuers: 'true' });
 	try {
 		await dialog.getByRole('button', { name: en.create }).click();
+		// Created (the dialog closes) before the setting goes back: a click
+		// returns before the server answers, which then refused it at times.
+		await expect(dialog).toBeHidden();
 	} finally {
 		await asAdmin('PATCH', '/api/v1/admin/settings', { oidc_allow_internal_issuers: 'false' });
 	}

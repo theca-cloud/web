@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0] - 2026-10-27
+
+### Features
+
+- Library groups under Advanced in an organization's settings
+- Core 1.1.0
+
+### Documentation
+
+- **claude**: The registry token for npm ci, and the Page type in Kit 3
+- **claude**: Never time uploads through Playwright's Chromium
+
 ## [1.1.0] - 2026-10-17
 
 ### Features
