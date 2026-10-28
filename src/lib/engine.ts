@@ -22,6 +22,8 @@ export type UploadEvent =
 			conflict: boolean;
 			unchanged: boolean;
 	  }
+	// A file the operating system left (`.DS_Store`, `._*`...): not uploaded.
+	| { kind: 'skipped'; path: string }
 	| { kind: 'failed'; path: string; code: string; message: string };
 
 /** What the page asks the worker. */

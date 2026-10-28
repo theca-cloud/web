@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.0] - 2026-10-28
+
+### Features
+
+- Ignored files (.DS_Store, ._*, Thumbs.db, desktop.ini) skipped silently in uploads; core 1.2.0
+
 ## [1.2.0] - 2026-10-27
 
 ### Features
