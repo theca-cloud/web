@@ -87,15 +87,23 @@ test('a folder uploaded, dropped files', async ({ page }) => {
 	mkdirSync(join(dir, 'Album', 'Sub'), { recursive: true });
 	writeFileSync(join(dir, 'Album', 'a.txt'), 'a');
 	writeFileSync(join(dir, 'Album', 'Sub', 'b.txt'), 'b');
+	// What operating systems leave: skipped, silently.
+	writeFileSync(join(dir, 'Album', '.DS_Store'), 'macOS');
+	writeFileSync(join(dir, 'Album', 'Sub', 'desktop.ini'), 'Windows');
 	try {
 		await logIn(page, admin.email, admin.password, `/${library.organization}/${library.id}`);
 		await page.getByLabel(en.upload_folder, { exact: true }).setInputFiles(join(dir, 'Album'));
 		await uploaded(page);
+		for (const name of ['.DS_Store', 'desktop.ini']) {
+			await expect(panel(page).getByText(name)).toHaveCount(0);
+		}
 		await closePanel(page);
 		await page.getByRole('link', { name: 'Album' }).click();
 		await expect(row(page, 'a.txt')).toBeVisible();
+		await expect(row(page, '.DS_Store')).toHaveCount(0);
 		await page.getByRole('link', { name: 'Sub' }).click();
 		await expect(row(page, 'b.txt')).toBeVisible();
+		await expect(row(page, 'desktop.ini')).toHaveCount(0);
 
 		// Dropped onto the folder.
 		await page.getByRole('region', { name: en.drop_here }).evaluate((zone) => {

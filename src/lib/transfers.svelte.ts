@@ -76,6 +76,10 @@ function apply(run: Run, event: UploadEvent) {
 		run.sent = event.uploaded + event.skipped;
 		return;
 	}
+	if (event.kind === 'skipped') {
+		run.files = run.files.filter((f) => f.path !== event.path);
+		return;
+	}
 	const file = run.files.find((f) => f.path === event.path);
 	if (!file) return;
 	if (event.kind === 'done') {

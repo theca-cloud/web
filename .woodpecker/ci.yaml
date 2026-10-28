@@ -82,7 +82,7 @@ steps:
   # the background for the rest of the pipeline, serving the app's build as in
   # production (build/ is read per request: it can come after the start).
   - name: theca
-    image: git.pband.ch/theca/core:1.1.0
+    image: git.pband.ch/theca/core:1.2.0
     pull: true
     detach: true
     depends_on: [server-files]
@@ -106,7 +106,7 @@ steps:
       - createdb -h postgres -U theca theca_fresh
 
   - name: theca-fresh
-    image: git.pband.ch/theca/core:1.1.0
+    image: git.pband.ch/theca/core:1.2.0
     pull: true
     detach: true
     depends_on: [server-files, fresh-db]
