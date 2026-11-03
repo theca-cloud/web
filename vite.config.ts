@@ -4,8 +4,14 @@ import { defineConfig } from 'vitest/config';
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 
+// scripts/dev.sh's ports, unless the environment sets them (CI).
+try {
+	process.loadEnvFile();
+} catch {
+	// No .env: the defaults.
+}
 // The dev server (scripts/dev.sh), behind this one: same origin, no CORS.
-const server = 'http://localhost:8093';
+const server = process.env.THECA_TEST_SERVER ?? 'http://localhost:8093';
 
 export default defineConfig({
 	plugins: [
@@ -31,7 +37,7 @@ export default defineConfig({
 	server: {
 		// Its port is PUBLIC_URL's (scripts/dev.sh): taken, it fails rather than
 		// moves. Not Vite's default 5173, which other projects keep busy.
-		port: 5193,
+		port: Number(process.env.APP_PORT ?? 5193),
 		strictPort: true,
 		proxy: { '/api': server, '/dav': server }
 	},

@@ -13,6 +13,7 @@ const named: Partial<Record<RouteId, (page: Page) => string>> = {
 	'/(public)/verify': () => m.verify_title(),
 	'/(public)/invite': () => m.invite_title(),
 	'/(public)/setup': () => m.setup_title(),
+	'/(public)/connect/[flow=uuid]': () => m.connect_title(),
 	'/(app)/account': () => m.account(),
 	'/(app)/[org=uuid]/settings': (page) =>
 		m.organization_settings_title({ name: page.data.organization.name })

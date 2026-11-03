@@ -45,6 +45,12 @@ if [ "$step" = all ] || [ "$step" = build ]; then
 fi
 if [ "$step" = all ] || [ "$step" = test ]; then
     npm test
+    # Locally, scripts/dev.sh's ports (.env); CI sets the variables itself.
+    if [ -z "${THECA_TEST_SERVER:-}" ] && [ -f .env ]; then
+        set -a
+        . ./.env
+        set +a
+    fi
     server=${THECA_TEST_SERVER:-http://localhost:8093}
     # The server may still be starting (CI): wait for up to a minute.
     attempt=0

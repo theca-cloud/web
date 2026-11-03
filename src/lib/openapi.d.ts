@@ -349,6 +349,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/flows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a login flow: anyone may, limited per address like logins. */
+        post: operations["start_login_flow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/flows/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Poll a flow: `202` while it waits, the app password once approved (the
+         *     flow then gone), `404` when expired or unknown.
+         */
+        post: operations["poll_login_flow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/flows/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A flow waiting for approval: what the approval page shows. */
+        get: operations["login_flow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/flows/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a flow: its device gets an app password for this account at its
+         *     next poll. A full session only: an app password for the whole account.
+         */
+        post: operations["approve_login_flow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/identities": {
         parameters: {
             query?: never;
@@ -417,7 +491,8 @@ export interface paths {
          *     cookie in any case. No session needed: an expired or revoked session's
          *     cookie would otherwise stay, as only the server clears an `httpOnly`
          *     cookie. A valid session stays protected by the CSRF rule (a `POST`, never
-         *     a `GET` another site could trigger). App passwords can't log out.
+         *     a `GET` another site could trigger). An app password logging out revokes
+         *     itself: a device signing out, its credential gone with it.
          */
         post: operations["logout"];
         delete?: never;
@@ -831,6 +906,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The changes to the libraries the credential can access, from its
+         *     positions, then live: Server-Sent Events. `event: libraries` (data: every
+         *     library it can access, trash included, each with its position) at the
+         *     start and whenever that changes; `event: changes` (data: one batch,
+         *     collapsed per resource, with the new positions); a `:` comment every 30 s.
+         *     A cut stream resumes from the last positions received.
+         */
+        post: operations["events"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/files/commit": {
         parameters: {
             query?: never;
@@ -995,7 +1094,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * A library, with the size and number of its files (their current versions,
+         *     outside the trash): a sync client decides from it whether to sync it.
+         */
+        get: operations["library"];
         put?: never;
         post?: never;
         /**
@@ -1772,12 +1875,71 @@ export interface components {
             /** @description Read only. */
             read_only: boolean;
         };
+        /** @description A changed resource, collapsed over the events of one batch. */
+        Change: {
+            /** @description Its latest event in the batch. */
+            action: components["schemas"]["EventAction"];
+            /**
+             * Format: uuid
+             * @description The node or the library.
+             */
+            id: string;
+            /** @description A node or a library. */
+            kind: components["schemas"]["ResourceKind"];
+            state?: null | components["schemas"]["ChangeState"];
+        };
         /** @description A password change: the current one, and the new one. */
         ChangePassword: {
             /** @description The current password. */
             current: string;
             /** @description The new password (at least 8 characters, and strong enough). */
             new: string;
+        };
+        /** @description A resource's current state, when read. */
+        ChangeState: {
+            /**
+             * Format: uuid
+             * @description A file's current version.
+             */
+            current_version?: string | null;
+            /** @description A file (true) or a folder or library (false). */
+            is_file?: boolean;
+            /**
+             * Format: uuid
+             * @description The library it is in (a library: itself).
+             */
+            library: string;
+            /**
+             * Format: date-time
+             * @description A file's modification time.
+             */
+            modified?: string | null;
+            /** @description Its name. */
+            name: string;
+            /**
+             * Format: uuid
+             * @description A node's parent folder; none for a library.
+             */
+            parent?: string | null;
+            /**
+             * Format: int64
+             * @description A file's size in bytes.
+             */
+            size?: number | null;
+            /** @description A library in its organization's trash. */
+            trashed?: boolean;
+        };
+        /**
+         * @description The event feed's `changes` message: one batch, collapsed per resource;
+         *     libraries first, then nodes parents first, then those gone.
+         */
+        Changes: {
+            /** @description The changed resources. */
+            entries: components["schemas"]["Change"][];
+            /** @description The new position of each library the batch covered. */
+            positions: {
+                [key: string]: number;
+            };
         };
         /**
          * @description Whether a chunk must be uploaded.
@@ -2058,6 +2220,22 @@ export interface components {
             email: string;
         };
         /**
+         * @description What happened to a resource (its latest event, for display: the state is
+         *     what a client applies).
+         * @enum {string}
+         */
+        EventAction: "created" | "versioned" | "touched" | "version_restored" | "renamed" | "moved" | "trashed" | "restored" | "purged" | "unknown";
+        /**
+         * @description `POST /events`: the cursor, the last event the client applied in each
+         *     library it follows. Empty on a first launch.
+         */
+        Events: {
+            /** @description Library → the number of the last event applied. */
+            after?: {
+                [key: string]: number;
+            };
+        };
+        /**
          * @description Everything the server holds about an account (`GET /me/export`), never
          *     secrets. Files come through the usual paths (CLI, WebDAV).
          */
@@ -2241,6 +2419,22 @@ export interface components {
              */
             writable?: boolean;
         };
+        /**
+         * @description A library and how much it holds: its files' current versions, outside the
+         *     trash (what a sync client would download).
+         */
+        LibraryInfo: components["schemas"]["Library"] & {
+            /**
+             * Format: int64
+             * @description How many files.
+             */
+            files: number;
+            /**
+             * Format: int64
+             * @description The sum of their sizes, in bytes.
+             */
+            size: number;
+        };
         /** @description A library's member. */
         LibraryMember: {
             /** @description Its email. */
@@ -2280,6 +2474,15 @@ export interface components {
              *     a right password gets `totp_required`: ask for the code, send again.
              */
             totp?: string | null;
+        };
+        /** @description A login flow, as its device sees it: valid 15 minutes. */
+        LoginFlow: {
+            /** @description Shown by the device: the approval page shows it too. */
+            code: string;
+            /** @description The secret to poll with (`POST /auth/flows/poll`); never shown. */
+            poll: string;
+            /** @description The page where the account approves the device: opened in a browser. */
+            url: string;
         };
         /** @description `POST /chunks/lookup`. */
         Lookup: {
@@ -2531,6 +2734,23 @@ export interface components {
             /** @description Its name. */
             name: string;
         };
+        /** @description A login flow waiting for approval, as the approval page shows it. */
+        PendingLoginFlow: {
+            /** @description The code the device shows. */
+            code: string;
+            /**
+             * Format: date-time
+             * @description When the device started it.
+             */
+            created_at: string;
+            /** @description The device's name. */
+            name: string;
+        };
+        /** @description Poll a login flow. */
+        PollLoginFlow: {
+            /** @description The flow's poll secret. */
+            poll: string;
+        };
         /** @description An OIDC identity provider (never its secret). */
         ProviderInfo: {
             /** @description The client ID registered there. */
@@ -2592,6 +2812,11 @@ export interface components {
             /** @description The password (at least 8 characters). */
             password: string;
         };
+        /**
+         * @description What an event is about.
+         * @enum {string}
+         */
+        ResourceKind: "node" | "library" | "unknown";
         /**
          * @description `POST /nodes/restore`: files and folders out of the trash, each in its own
          *     transaction (at most 1000).
@@ -2730,6 +2955,11 @@ export interface components {
             required: boolean;
             /** @description The setup needs the token printed in the server's logs. */
             token_required: boolean;
+        };
+        /** @description Start a device's login through the browser (docs/decisions.md, Authentication). */
+        StartLoginFlow: {
+            /** @description The device's name, given to its app password (1 to 200 characters). */
+            name: string;
         };
         /** @description A storage implementation and its settings. */
         StorageBackend: {
@@ -3810,6 +4040,161 @@ export interface operations {
             };
         };
     };
+    start_login_flow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartLoginFlow"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginFlow"];
+                };
+            };
+            /** @description `invalid_name` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    poll_login_flow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PollLoginFlow"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewAppPassword"];
+                };
+            };
+            /** @description Not approved yet */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unknown, expired, or already returned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    login_flow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingLoginFlow"];
+                };
+            };
+            /** @description `full_session_required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unknown, expired or already approved */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    approve_login_flow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `full_session_required` */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Unknown, expired or already approved */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     identities: {
         parameters: {
             query?: never;
@@ -3929,15 +4314,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description `not_a_session` (an app password) */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
             };
         };
     };
@@ -4615,6 +4991,39 @@ export interface operations {
             };
         };
     };
+    events: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Events"];
+            };
+        };
+        responses: {
+            /** @description Server-Sent Events: `libraries` (a list of FeedLibrary), then `changes` (Changes) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["Changes"];
+                };
+            };
+            /** @description `too_many_streams`: at most 10 per credential */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     commit: {
         parameters: {
             query?: never;
@@ -4893,6 +5302,35 @@ export interface operations {
             };
             /** @description Name taken, or no storage configured */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    library: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryInfo"];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -17,9 +17,10 @@ GITEA_TOKEN=$(cat .secrets/gitea_token) npm install
 ```sh
 scripts/dev.sh                 # start the dev server (the pinned core + Postgres, set up), on :8093,
                                # its emails in Mailpit on :8095, a server to set up on :8094
+                               # (defaults: taken by another project, the next free one; all in .env)
 scripts/dev.sh --fresh         # that last server back to never set up (the setup wizard's test)
 scripts/dev.sh --down          # stop it all (start over: then rm -rf data/)
-npm run dev                    # the app on :5193, /api and /dav proxied to :8093; login dev@theca.test theca-dev-password
+npm run dev                    # the app on :5193 (APP_PORT), /api and /dav proxied to the server; login dev@theca.test theca-dev-password
 scripts/ci.sh [lint|build|test] # every CI check natively, or one step (test needs scripts/dev.sh)
 scripts/install-hooks.sh       # run scripts/ci.sh before every push (bypass: git push --no-verify)
 scripts/api-types.sh           # the API types from the pinned core release (after bumping @theca/client)
