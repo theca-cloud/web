@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.0] - 2026-11-03
+
+### Features
+
+- Approve a device's login on /connect; core 1.3.0
+
 ## [1.3.0] - 2026-10-28
 
 ### Features

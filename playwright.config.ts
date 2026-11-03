@@ -1,5 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// scripts/dev.sh's ports, unless the environment sets them (CI). The test
+// workers inherit them (support.ts).
+try {
+	process.loadEnvFile();
+} catch {
+	// No .env: the defaults.
+}
+const local = `http://localhost:${process.env.APP_PORT ?? 5193}`;
+
 // THECA_TEST_APP (CI): the server serving build/, as in production. Unset: the
 // Vite dev server, started here, in front of scripts/dev.sh's server.
 const app = process.env.THECA_TEST_APP;
@@ -8,7 +17,7 @@ const fresh = process.env.THECA_TEST_FRESH ?? 'http://localhost:8094';
 
 export default defineConfig({
 	testDir: 'tests/e2e',
-	use: { baseURL: app ?? 'http://localhost:5193' },
+	use: { baseURL: app ?? local },
 	projects: [
 		{
 			name: 'chromium',
@@ -24,7 +33,5 @@ export default defineConfig({
 			}
 		}
 	],
-	webServer: app
-		? undefined
-		: { command: 'npm run dev', url: 'http://localhost:5193', reuseExistingServer: true }
+	webServer: app ? undefined : { command: 'npm run dev', url: local, reuseExistingServer: true }
 });
