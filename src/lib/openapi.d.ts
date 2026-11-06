@@ -2032,8 +2032,10 @@ export interface components {
              */
             file: string;
             /**
-             * @description The same content as the base, still current: no version was created,
-             *     `version` is the current one.
+             * @description The same content as a version already has: no version was created.
+             *     `version` is the current one when its content matched; the base, when
+             *     the content was the base's and a newer version is current (stale: that
+             *     one stays current).
              */
             unchanged?: boolean;
             /**
