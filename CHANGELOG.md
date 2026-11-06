@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.4.2] - 2026-11-06
+
+### Fixes
+
+- Dev.sh on a fresh clone (no .env)
+- Core 1.3.2, what the sync client needs to never lose files
+
+### Documentation
+
+- **readme**: A Discord link, for questions, support and saying you run Theca
+
+### Build and CI
+
+- Npm audit and eslint --max-warnings 0, as the workflow requires
+
 ## [1.4.1] - 2026-11-05
 
 ### Documentation
