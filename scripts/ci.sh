@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 # Every CI check, run natively: `scripts/ci.sh` runs them all (locally, and the
 # pre-push hook); `scripts/ci.sh <step>` runs one, as the Woodpecker steps do:
-#   lint   formatting, lint, types (npm run lint, npm run check), and the API
+#   lint   formatting, lint, types (npm run lint, npm run check), the
+#          dependency audit (npm audit), and the API
 #          types up to date with the pinned core release (scripts/api-types.sh)
 #   test   unit tests (npm test), then the end-to-end ones (npm run test:e2e)
 #          against THECA_TEST_SERVER (default: scripts/dev.sh's), set up first
@@ -36,6 +37,12 @@ if [ "$step" = all ] || [ "$step" = lint ]; then
         { echo ".woodpecker/ci.yaml runs $(echo $tags), not the pinned core $pin" >&2; exit 1; }
     npm run lint
     npm run check
+    # Every dependency: the SPA bundles its devDependencies (--omit=dev would
+    # audit nothing). Lows let through: deepmerge's, in vite-plugin-svelte at
+    # build time, has no fixed release. package.json overrides minimatch to 11:
+    # ESLint and typescript-eslint still ask for 10, whose globs can be made to
+    # blow up (GHSA-g3hv-75wg-m249); drop it once they take 11.
+    npm audit --audit-level=moderate
     scripts/api-types.sh
     git diff --exit-code -- src/lib/openapi.d.ts ||
         { echo "src/lib/openapi.d.ts is stale: run scripts/api-types.sh and commit it" >&2; exit 1; }
