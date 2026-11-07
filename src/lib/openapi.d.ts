@@ -1936,6 +1936,10 @@ export interface components {
         Changes: {
             /** @description The changed resources. */
             entries: components["schemas"]["Change"][];
+            /** @description The ID of each new position's event. */
+            events?: {
+                [key: string]: string;
+            };
             /** @description The new position of each library the batch covered. */
             positions: {
                 [key: string]: number;
@@ -2232,9 +2236,9 @@ export interface components {
          *     library it follows. Empty on a first launch.
          */
         Events: {
-            /** @description Library → the number of the last event applied. */
+            /** @description Library → the last event applied. */
             after?: {
-                [key: string]: number;
+                [key: string]: components["schemas"]["Position"];
             };
         };
         /**
@@ -2753,6 +2757,24 @@ export interface components {
             /** @description The flow's poll secret. */
             poll: string;
         };
+        /**
+         * @description A client's position in a library: the last event it applied, by number
+         *     and by ID. The ID tells the server it's still that event: a database
+         *     restored from a backup numbers its new events from its restore point, so
+         *     a number alone can name another event.
+         */
+        Position: {
+            /**
+             * Format: uuid
+             * @description Its ID.
+             */
+            event?: string | null;
+            /**
+             * Format: int64
+             * @description The event's number in its library.
+             */
+            seq: number;
+        } | number;
         /** @description An OIDC identity provider (never its secret). */
         ProviderInfo: {
             /** @description The client ID registered there. */
@@ -5013,15 +5035,6 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": components["schemas"]["Changes"];
-                };
-            };
-            /** @description `too_many_streams`: at most 10 per credential */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
