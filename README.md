@@ -8,7 +8,7 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Development
 
-Prerequisites: Node.js 24, `git-cliff` for releases, and a Gitea token with package read (`@theca/client` and the core releases' `openapi.json` are private), read by `.npmrc` and the scripts: `GITEA_TOKEN` in the environment, or the file `.secrets/gitea_token` (ignored by git), which the scripts read. npm itself only reads the variable:
+Prerequisites: Node.js 24, `git-cliff` for releases, and a Gitea token with package read (`@theca/client` is private), read by `.npmrc` and the scripts: `GITEA_TOKEN` in the environment, or the file `.secrets/gitea_token` (ignored by git), which the scripts read. npm itself only reads the variable:
 
 ```sh
 GITEA_TOKEN=$(cat .secrets/gitea_token) npm install

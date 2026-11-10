@@ -1440,6 +1440,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/nodes/{id}/ignore-files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The ignore files (`.thecaignore`) that apply in a folder: its own and every
+         *     folder's above it, the root's first. Clients read their content themselves
+         *     (as any file's: an E2EE library's too) and skip what they name when
+         *     uploading; the server enforces nothing here.
+         */
+        get: operations["ignore_files"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/nodes/{id}/tree": {
         parameters: {
             query?: never;
@@ -2347,6 +2369,37 @@ export interface components {
             id: string;
             /** @description Its name, e.g. "Google". */
             name: string;
+        };
+        /** @description An ignore file above or in a folder. */
+        IgnoreFile: {
+            /**
+             * Format: uuid
+             * @description Its current version; none for a file without a version yet.
+             */
+            current_version?: string | null;
+            /**
+             * Format: uuid
+             * @description The file.
+             */
+            id: string;
+            /** @description Its path in its library, e.g. `/a/.thecaignore`. */
+            path: string;
+            /**
+             * Format: int64
+             * @description Its size in bytes (its current version's).
+             */
+            size?: number | null;
+        };
+        /**
+         * @description `GET /nodes/{id}/ignore-files`: the ignore files (`.thecaignore`) that
+         *     apply in a folder, its own and every folder's above it; their content is
+         *     downloaded like any file's.
+         */
+        IgnoreFiles: {
+            /** @description The ignore files, the root's first. */
+            files: components["schemas"]["IgnoreFile"][];
+            /** @description The folder's path in its library, e.g. `/a/b` (`/` for the root). */
+            path: string;
         };
         /** @description `GET /instance`: public, for a login page. */
         Instance: {
@@ -6043,6 +6096,44 @@ export interface operations {
             };
             /** @description `name_taken` (a file has a path's name) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    ignore_files: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IgnoreFiles"];
+                };
+            };
+            /** @description `not_a_folder` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

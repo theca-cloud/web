@@ -14,6 +14,8 @@
 	const total = $derived(transfers.runs.reduce((sum, run) => sum + run.total, 0));
 	const sent = $derived(transfers.runs.reduce((sum, run) => sum + run.sent, 0));
 	const percent = $derived(total > 0 ? Math.round((sent / total) * 100) : 0);
+	const ignored = $derived(transfers.runs.reduce((sum, run) => sum + run.ignored, 0));
+	const problems = $derived(transfers.runs.flatMap((run) => run.problems));
 
 	function label(file: FileState): string {
 		switch (file.state) {
@@ -80,6 +82,24 @@
 		<p class="text-xs text-muted-foreground">
 			{m.transfers_progress({ done: formatSize(sent), total: formatSize(total) })}
 		</p>
+		{#if ignored > 0}
+			<p class="text-xs text-muted-foreground">
+				{m.transfers_ignored({ count: ignored })}
+				<a
+					class="underline"
+					href="https://theca.rs/features#ignored-files"
+					target="_blank"
+					rel="noreferrer">{m.transfers_ignored_link()}</a
+				>
+			</p>
+		{/if}
+		{#each problems as problem (`${problem.path}:${problem.line}`)}
+			<p class="text-xs text-destructive">
+				{problem.line === undefined
+					? m.ignore_file_too_long({ path: problem.path })
+					: m.ignore_file_line({ path: problem.path, line: problem.line })}
+			</p>
+		{/each}
 		<ul class="grid max-h-48 gap-1 overflow-y-auto">
 			{#each files as { run, file } (`${run.id}/${file.path}`)}
 				<li class="flex items-center gap-2">

@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.0] - 2026-11-10
+
+### Features
+
+- What an ignore file names is skipped, said in the upload panel
+
+### Fixes
+
+- **ci**: Run the checks on prod and version tags, before any release
+
 ## [1.4.4] - 2026-11-07
 
 ### Fixes
