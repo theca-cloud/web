@@ -5,8 +5,6 @@
 # Run it after bumping @theca/client.
 set -eu
 cd "$(dirname "$0")/.."
-# The registry token: GITEA_TOKEN, else .secrets/gitea_token (ignored by git).
-export GITEA_TOKEN="${GITEA_TOKEN:-$(cat .secrets/gitea_token 2>/dev/null)}"
 
 version=$(node -p "require('./package.json').dependencies['@theca/client']")
 case "$version" in
@@ -20,7 +18,8 @@ esac
 case "$version" in 0.*) tag=v$version ;; *) tag=$version ;; esac
 spec=$(mktemp)
 trap 'rm -f "$spec"' EXIT
-curl -fsSL -H "Authorization: token ${GITEA_TOKEN:?GITEA_TOKEN: see the README}" -o "$spec" \
-    "https://git.pband.ch/theca/core/releases/download/$tag/openapi.json"
+# From core's public GitHub mirror, at the tag: the same file its Gitea release
+# attaches, and no token needed.
+curl -fsSL -o "$spec" "https://raw.githubusercontent.com/theca-cloud/core/$tag/openapi.json"
 # Pinned, run apart: it wants TypeScript 5 as a peer, the app has 6.
 npx -y openapi-typescript@7.13.0 "$spec" -o src/lib/openapi.d.ts
