@@ -24,6 +24,11 @@ export type UploadEvent =
 	  }
 	// A file the operating system left (`.DS_Store`, `._*`...): not uploaded.
 	| { kind: 'skipped'; path: string }
+	// A file an ignore file (`.thecaignore`) names: not uploaded.
+	| { kind: 'ignored'; path: string }
+	// An ignore file's line that isn't a pattern (`line`), or the file past
+	// 64 KiB (no `line`): skipped, the rest applies.
+	| { kind: 'ignore_problem'; path: string; line?: number }
 	| { kind: 'failed'; path: string; code: string; message: string };
 
 /** What the page asks the worker. */

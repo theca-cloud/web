@@ -122,6 +122,52 @@ test('a folder uploaded, dropped files', async ({ page }) => {
 	}
 });
 
+test('what an ignore file names is skipped, said with a link', async ({ page }) => {
+	const library = await newLibrary('Ignored');
+	const dir = mkdtempSync(join(tmpdir(), 'theca-'));
+	mkdirSync(join(dir, 'Proj', 'build'), { recursive: true });
+	// Line 3 isn't UTF-8: skipped, and said.
+	writeFileSync(join(dir, 'Proj', '.thecaignore'), Buffer.from('*.log\nbuild/\n\xff\n', 'latin1'));
+	writeFileSync(join(dir, 'Proj', 'a.txt'), 'a');
+	writeFileSync(join(dir, 'Proj', 'x.log'), 'never up');
+	writeFileSync(join(dir, 'Proj', 'build', 'out.o'), 'never up');
+	try {
+		await logIn(page, admin.email, admin.password, `/${library.organization}/${library.id}`);
+		await page.getByLabel(en.upload_folder, { exact: true }).setInputFiles(join(dir, 'Proj'));
+		await uploaded(page);
+		await expect(panel(page).getByText(en.transfers_ignored.replace('{count}', '2'))).toBeVisible();
+		await expect(
+			panel(page).getByRole('link', { name: en.transfers_ignored_link })
+		).toHaveAttribute('href', 'https://theca.rs/features#ignored-files');
+		await expect(
+			panel(page).getByText(
+				en.ignore_file_line.replace('{path}', 'Proj/.thecaignore').replace('{line}', '3')
+			)
+		).toBeVisible();
+		for (const name of ['x.log', 'build/out.o']) {
+			await expect(panel(page).getByText(name)).toHaveCount(0);
+		}
+		await closePanel(page);
+		await page.getByRole('link', { name: 'Proj' }).click();
+		await expect(row(page, 'a.txt')).toBeVisible();
+		await expect(row(page, '.thecaignore')).toBeVisible();
+		await expect(row(page, 'x.log')).toHaveCount(0);
+		await expect(row(page, 'build')).toHaveCount(0);
+
+		// Into the folder now holding it: its ignore file applies from the server.
+		await page.getByLabel(en.upload, { exact: true }).setInputFiles({
+			name: 'y.log',
+			mimeType: 'text/plain',
+			buffer: Buffer.from('never up')
+		});
+		await uploaded(page);
+		await expect(panel(page).getByText(en.transfers_ignored.replace('{count}', '1'))).toBeVisible();
+		await expect(row(page, 'y.log')).toHaveCount(0);
+	} finally {
+		await dropLibrary(library);
+	}
+});
+
 test('a refused name fails alone; the quota is said', async ({ page }) => {
 	const library = await newLibrary('Refused');
 	const organization = await adminOrganization();

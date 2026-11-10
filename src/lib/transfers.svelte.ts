@@ -18,6 +18,10 @@ export class Run {
 	/** Bytes sent, or already stored (deduplicated). */
 	sent = $state(0);
 	finished = $state(false);
+	/** Files an ignore file named: not uploaded, counted. */
+	ignored = $state(0);
+	/** What in the ignore files that applied doesn't apply. */
+	problems = $state<{ path: string; line?: number }[]>([]);
 
 	constructor(id: number, paths: string[]) {
 		this.id = id;
@@ -78,6 +82,15 @@ function apply(run: Run, event: UploadEvent) {
 	}
 	if (event.kind === 'skipped') {
 		run.files = run.files.filter((f) => f.path !== event.path);
+		return;
+	}
+	if (event.kind === 'ignored') {
+		run.files = run.files.filter((f) => f.path !== event.path);
+		run.ignored++;
+		return;
+	}
+	if (event.kind === 'ignore_problem') {
+		run.problems.push({ path: event.path, line: event.line });
 		return;
 	}
 	const file = run.files.find((f) => f.path === event.path);
